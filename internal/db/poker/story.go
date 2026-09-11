@@ -18,7 +18,13 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 		`SELECT
 			id, name, type, reference_id, link, description, acceptance_criteria, priority,
 			points, active, skipped, votestart_time, voteend_time, votes, estimation,
-			row_number() OVER (ORDER BY position ASC) as position
+			row_number() OVER (ORDER BY position ASC) as position,
+			(SELECT jsonb_build_object('status', j.status, 'issueKey', j.issue_key, 'points', j.points,
+				'error', j.last_error, 'attempts', j.attempts, 'updatedAt', j.updated_at)
+			 FROM thunderdome.poker_jira_sync j WHERE j.story_id = poker_story.id
+			 AND j.vote_start_time = poker_story.votestart_time AND NOT poker_story.active) AS jira_sync,
+			(SELECT j.participants FROM thunderdome.poker_jira_sync j WHERE j.story_id = poker_story.id
+			 AND j.vote_start_time = poker_story.votestart_time AND NOT poker_story.active) AS voting_participants
 			FROM thunderdome.poker_story WHERE poker_id = $1 ORDER BY position
 		`,
 		pokerID,
@@ -28,6 +34,8 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 		for storyRows.Next() {
 			var v string
 			var estimation []byte
+			var jiraSync []byte
+			var votingParticipants []byte
 			var referenceID sql.NullString
 			var link sql.NullString
 			var description sql.NullString
@@ -39,11 +47,16 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 			}
 			if err := storyRows.Scan(
 				&p.ID, &p.Name, &p.Type, &referenceID, &link, &description, &acceptanceCriteria, &p.Priority,
-				&p.Points, &p.Active, &p.Skipped, &p.VoteStartTime, &p.VoteEndTime, &v, &estimation, &p.Position,
+				&p.Points, &p.Active, &p.Skipped, &p.VoteStartTime, &p.VoteEndTime, &v, &estimation, &p.Position, &jiraSync, &votingParticipants,
 			); err != nil {
 				d.Logger.Error("get poker stories query error", zap.Error(err),
 					zap.String("PokerID", pokerID), zap.String("UserID", userID))
 			} else {
+				if len(jiraSync) > 0 {
+					if err := json.Unmarshal(jiraSync, &p.JiraSync); err != nil {
+						d.Logger.Error("decode poker Jira sync", zap.Error(err))
+					}
+				}
 				p.VoteDeadline = p.VoteStartTime.Add(thunderdome.PokerVotingDuration)
 				p.ReferenceID = referenceID.String
 				p.Link = link.String
@@ -61,7 +74,13 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 							d.Logger.Error("decode poker estimation", zap.Error(err))
 						}
 					} else {
-						p.Estimation = thunderdome.CalculatePokerEstimation(p.Votes, users)
+						participants := users
+						if len(votingParticipants) > 0 {
+							if err := json.Unmarshal(votingParticipants, &participants); err != nil {
+								d.Logger.Error("decode poker voting participants", zap.Error(err))
+							}
+						}
+						p.Estimation = thunderdome.CalculatePokerEstimation(p.Votes, participants)
 					}
 				}
 
@@ -203,10 +222,24 @@ func (d *Service) EndStoryVoting(pokerID string, storyID string) ([]*thunderdome
 
 // SkipStory sets story to active: false and unsets games activeStoryId
 func (d *Service) SkipStory(pokerID string, storyID string) ([]*thunderdome.Story, error) {
-	if _, err := d.DB.Exec(
-		`CALL thunderdome.poker_vote_skip($1, $2);`, pokerID, storyID); err != nil {
-		d.Logger.Error("CALL thunderdome.poker_vote_skip error", zap.Error(err),
-			zap.String("PokerID", pokerID), zap.String("StoryID", storyID))
+	// Scope the update to the selected story. The legacy procedure marks every story
+	// skipped, which would also cancel unrelated stories' pending Jira writes.
+	result, err := d.DB.Exec(`WITH skipped AS (
+		UPDATE thunderdome.poker_story s SET updated_date = now(), active = false, skipped = true, voteend_time = now()
+		FROM thunderdome.poker p WHERE s.id = $2 AND s.poker_id = $1 AND p.id = s.poker_id
+		AND p.active_story_id = s.id AND p.end_time IS NULL RETURNING s.id
+	)
+	UPDATE thunderdome.poker SET updated_date = now(), last_active = now(), voting_locked = true, active_story_id = NULL
+	WHERE id = $1 AND EXISTS (SELECT 1 FROM skipped)`, pokerID, storyID)
+	if err != nil {
+		return nil, fmt.Errorf("skip poker story: %w", err)
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	if count != 1 {
+		return nil, fmt.Errorf("story is not the current story")
 	}
 
 	stories := d.GetStories(pokerID, "")
@@ -324,17 +357,24 @@ func (d *Service) FinalizeStory(pokerID string, storyID string, points string) (
 		return nil, err
 	}
 	defer tx.Rollback()
-	var rawVotes []byte
-	if err := tx.QueryRow(`SELECT s.votes FROM thunderdome.poker_story s
+	var rawVotes, votingParticipants []byte
+	if err := tx.QueryRow(`SELECT s.votes,
+		(SELECT j.participants FROM thunderdome.poker_jira_sync j WHERE j.story_id = s.id AND j.vote_start_time = s.votestart_time)
+		FROM thunderdome.poker_story s
 		JOIN thunderdome.poker p ON p.id = s.poker_id
 		WHERE s.id = $1 AND p.id = $2 AND p.active_story_id = s.id
 		AND p.voting_locked AND NOT s.active AND p.end_time IS NULL FOR UPDATE OF p, s`,
-		storyID, pokerID).Scan(&rawVotes); err != nil {
+		storyID, pokerID).Scan(&rawVotes, &votingParticipants); err != nil {
 		return nil, fmt.Errorf("finalize poker story: %w", err)
 	}
 	var votes []*thunderdome.Vote
 	if err := json.Unmarshal(rawVotes, &votes); err != nil {
 		return nil, err
+	}
+	if len(votingParticipants) > 0 {
+		if err := json.Unmarshal(votingParticipants, &users); err != nil {
+			return nil, err
+		}
 	}
 	if len(votes) == 0 {
 		return nil, fmt.Errorf("cannot finalize a story without votes")

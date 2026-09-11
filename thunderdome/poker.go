@@ -76,6 +76,7 @@ type Story struct {
 	Skipped            bool             `json:"skipped"`
 	VoteStartTime      time.Time        `json:"voteStartTime"`
 	VoteDeadline       time.Time        `json:"voteDeadline"`
+	JiraSync           *PokerJiraSync   `json:"jiraSync,omitempty"`
 	VoteEndTime        time.Time        `json:"voteEndTime"`
 	Position           int32            `json:"position"`
 }

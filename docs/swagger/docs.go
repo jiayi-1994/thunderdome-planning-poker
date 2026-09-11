@@ -3133,6 +3133,202 @@ const docTemplate = `{
                 ]
             }
         },
+        "/battles/{battleId}/jira-writeback": {
+            "get": {
+                "description": "Requires a game facilitator. Connection choices belong to the caller and exclude credentials.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "poker",
+                    "jira"
+                ],
+                "summary": "Get poker Jira writeback settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Poker game ID",
+                        "name": "battleId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.standardJsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/http.pokerJiraConfigurationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "description": "Facilitators can authorize their own Jira connection for future voting completions. The selected field must be numeric.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "poker",
+                    "jira"
+                ],
+                "summary": "Configure automatic Jira point writeback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Poker game ID",
+                        "name": "battleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Jira writeback settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.pokerJiraSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.standardJsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/thunderdome.PokerJiraSettings"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/battles/{battleId}/jira-writeback/fields": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "poker",
+                    "jira"
+                ],
+                "summary": "List numeric Jira fields for poker writeback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Poker game ID",
+                        "name": "battleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Caller-owned Jira connection ID",
+                        "name": "instanceId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.standardJsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/thunderdome.JiraNumericField"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/battles/{battleId}/plans": {
             "post": {
                 "description": "Creates a poker story",
@@ -3289,6 +3485,59 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/battles/{battleId}/plans/{planId}/jira-retry": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "poker",
+                    "jira"
+                ],
+                "summary": "Retry failed Jira point writeback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Poker game ID",
+                        "name": "battleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Story ID",
+                        "name": "planId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/http.standardJsonResponse"
                         }
@@ -16648,6 +16897,45 @@ const docTemplate = `{
                 }
             }
         },
+        "http.pokerJiraConfigurationResponse": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.pokerJiraConnectionChoice"
+                    }
+                },
+                "settings": {
+                    "$ref": "#/definitions/thunderdome.PokerJiraSettings"
+                }
+            }
+        },
+        "http.pokerJiraConnectionChoice": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.pokerJiraSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "fieldId": {
+                    "type": "string"
+                },
+                "instanceId": {
+                    "type": "string"
+                }
+            }
+        },
         "http.pokerSettingsRequestBody": {
             "type": "object",
             "properties": {
@@ -17895,6 +18183,17 @@ const docTemplate = `{
                 }
             }
         },
+        "thunderdome.JiraNumericField": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "thunderdome.Organization": {
             "type": "object",
             "properties": {
@@ -18056,6 +18355,77 @@ const docTemplate = `{
                 },
                 "votingLocked": {
                     "type": "boolean"
+                }
+            }
+        },
+        "thunderdome.PokerCategoryAverage": {
+            "type": "object",
+            "properties": {
+                "average": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "thunderdome.PokerEstimation": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/thunderdome.PokerCategoryAverage"
+                    }
+                },
+                "total": {
+                    "type": "string"
+                }
+            }
+        },
+        "thunderdome.PokerJiraSettings": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "fieldId": {
+                    "type": "string"
+                },
+                "fieldName": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "instanceId": {
+                    "type": "string"
+                }
+            }
+        },
+        "thunderdome.PokerJiraSync": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "issueKey": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
                 }
             }
         },
@@ -18586,8 +18956,14 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "estimation": {
+                    "$ref": "#/definitions/thunderdome.PokerEstimation"
+                },
                 "id": {
                     "type": "string"
+                },
+                "jiraSync": {
+                    "$ref": "#/definitions/thunderdome.PokerJiraSync"
                 },
                 "link": {
                     "type": "string"
@@ -18611,6 +18987,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "type": {
+                    "type": "string"
+                },
+                "voteDeadline": {
                     "type": "string"
                 },
                 "voteEndTime": {
@@ -19245,6 +19624,9 @@ const docTemplate = `{
         "thunderdome.Vote": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
                 "vote": {
                     "type": "string"
                 },

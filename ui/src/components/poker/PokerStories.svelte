@@ -7,6 +7,7 @@
   import AddPlan from './AddStory.svelte';
   import ViewPlan from './ViewStory.svelte';
   import ImportModal from './ImportModal.svelte';
+  import JiraSyncStatus from './JiraSyncStatus.svelte';
 
   import type { NotificationService } from '../../types/notifications';
   import type { ApiClient } from '../../types/apiclient';
@@ -21,6 +22,7 @@
     notifications: NotificationService;
     xfetch: ApiClient;
     gameId?: string;
+    activePlanId?: string;
     gameOver?: boolean;
   }
 
@@ -31,6 +33,7 @@
     notifications,
     xfetch,
     gameId = '',
+    activePlanId = '',
     gameOver = false,
   }: Props = $props();
 
@@ -287,6 +290,18 @@
 
             <span data-testid="plan-name" class="flex-1">{plan.name}</span>
           </div>
+          {#if plan.jiraSync && plan.id !== activePlanId}
+            <div class="mt-2">
+              <JiraSyncStatus
+                sync={plan.jiraSync}
+                {gameId}
+                storyId={plan.id}
+                canRetry={isFacilitator}
+                {xfetch}
+                {notifications}
+              />
+            </div>
+          {/if}
         </div>
 
         <div class="lg:flex-none text-right">

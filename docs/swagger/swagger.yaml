@@ -397,6 +397,31 @@ definitions:
       type:
         type: string
     type: object
+  http.pokerJiraConfigurationResponse:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/http.pokerJiraConnectionChoice'
+        type: array
+      settings:
+        $ref: '#/definitions/thunderdome.PokerJiraSettings'
+    type: object
+  http.pokerJiraConnectionChoice:
+    properties:
+      host:
+        type: string
+      id:
+        type: string
+    type: object
+  http.pokerJiraSettingsRequest:
+    properties:
+      enabled:
+        type: boolean
+      fieldId:
+        type: string
+      instanceId:
+        type: string
+    type: object
   http.pokerSettingsRequestBody:
     properties:
       autoFinishVoting:
@@ -1245,6 +1270,13 @@ definitions:
       user_id:
         type: string
     type: object
+  thunderdome.JiraNumericField:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
   thunderdome.Organization:
     properties:
       createdDate:
@@ -1352,6 +1384,52 @@ definitions:
         type: array
       votingLocked:
         type: boolean
+    type: object
+  thunderdome.PokerCategoryAverage:
+    properties:
+      average:
+        type: string
+      category:
+        type: string
+      count:
+        type: integer
+    type: object
+  thunderdome.PokerEstimation:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/thunderdome.PokerCategoryAverage'
+        type: array
+      total:
+        type: string
+    type: object
+  thunderdome.PokerJiraSettings:
+    properties:
+      enabled:
+        type: boolean
+      fieldId:
+        type: string
+      fieldName:
+        type: string
+      host:
+        type: string
+      instanceId:
+        type: string
+    type: object
+  thunderdome.PokerJiraSync:
+    properties:
+      attempts:
+        type: integer
+      error:
+        type: string
+      issueKey:
+        type: string
+      points:
+        type: string
+      status:
+        type: string
+      updatedAt:
+        type: string
     type: object
   thunderdome.PokerSettings:
     properties:
@@ -1699,8 +1777,12 @@ definitions:
         type: boolean
       description:
         type: string
+      estimation:
+        $ref: '#/definitions/thunderdome.PokerEstimation'
       id:
         type: string
+      jiraSync:
+        $ref: '#/definitions/thunderdome.PokerJiraSync'
       link:
         type: string
       name:
@@ -1716,6 +1798,8 @@ definitions:
       skipped:
         type: boolean
       type:
+        type: string
+      voteDeadline:
         type: string
       voteEndTime:
         type: string
@@ -2132,6 +2216,8 @@ definitions:
     type: object
   thunderdome.Vote:
     properties:
+      category:
+        type: string
       vote:
         type: string
       warriorId:
@@ -4337,6 +4423,126 @@ paths:
       summary: End Poker Game
       tags:
       - poker
+  /battles/{battleId}/jira-writeback:
+    get:
+      description: Requires a game facilitator. Connection choices belong to the caller
+        and exclude credentials.
+      parameters:
+      - description: Poker game ID
+        in: path
+        name: battleId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.standardJsonResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/http.pokerJiraConfigurationResponse'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get poker Jira writeback settings
+      tags:
+      - poker
+      - jira
+    put:
+      consumes:
+      - application/json
+      description: Facilitators can authorize their own Jira connection for future
+        voting completions. The selected field must be numeric.
+      parameters:
+      - description: Poker game ID
+        in: path
+        name: battleId
+        required: true
+        type: string
+      - description: Jira writeback settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/http.pokerJiraSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.standardJsonResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/thunderdome.PokerJiraSettings'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Configure automatic Jira point writeback
+      tags:
+      - poker
+      - jira
+  /battles/{battleId}/jira-writeback/fields:
+    get:
+      parameters:
+      - description: Poker game ID
+        in: path
+        name: battleId
+        required: true
+        type: string
+      - description: Caller-owned Jira connection ID
+        in: query
+        name: instanceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.standardJsonResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/thunderdome.JiraNumericField'
+                  type: array
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List numeric Jira fields for poker writeback
+      tags:
+      - poker
+      - jira
   /battles/{battleId}/plans:
     post:
       description: Creates a poker story
@@ -4445,6 +4651,40 @@ paths:
       summary: Update Poker Story
       tags:
       - poker
+  /battles/{battleId}/plans/{planId}/jira-retry:
+    post:
+      parameters:
+      - description: Poker game ID
+        in: path
+        name: battleId
+        required: true
+        type: string
+      - description: Story ID
+        in: path
+        name: planId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Retry failed Jira point writeback
+      tags:
+      - poker
+      - jira
   /departments/{deptId}/poker-settings:
     post:
       description: Creates new poker settings for a department

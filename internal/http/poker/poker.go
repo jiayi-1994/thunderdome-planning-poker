@@ -85,6 +85,10 @@ type UserDataSvc interface {
 	GetGuestUserByID(ctx context.Context, userID string) (*thunderdome.User, error)
 }
 
+type JiraDataSvc interface {
+	ProcessPokerJiraSync(ctx context.Context, write func(context.Context, thunderdome.JiraInstance, thunderdome.PokerJiraWrite) error) (*thunderdome.PokerJiraSyncEvent, error)
+}
+
 // Service provides battle service
 type Service struct {
 	config                Config
@@ -94,6 +98,7 @@ type Service struct {
 	UserService           UserDataSvc
 	AuthService           AuthDataSvc
 	PokerService          PokerDataSvc
+	JiraService           JiraDataSvc
 	hub                   *wshub.Hub
 }
 
@@ -104,6 +109,7 @@ func New(
 	validateUserCookie func(w http.ResponseWriter, r *http.Request) (string, error),
 	userService UserDataSvc, authService AuthDataSvc,
 	pokerDataService PokerDataSvc,
+	jiraDataService JiraDataSvc,
 ) *Service {
 	s := &Service{
 		config:                config,
@@ -113,6 +119,7 @@ func New(
 		UserService:           userService,
 		AuthService:           authService,
 		PokerService:          pokerDataService,
+		JiraService:           jiraDataService,
 	}
 
 	s.hub = wshub.NewHub(logger, wshub.Config{
@@ -164,6 +171,9 @@ func New(
 
 	go s.hub.Run()
 	go s.watchVotingDeadlines(context.Background())
+	if s.JiraService != nil {
+		go s.watchJiraWritebacks(context.Background())
+	}
 
 	return s
 }

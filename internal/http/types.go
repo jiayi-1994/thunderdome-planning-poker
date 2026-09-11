@@ -228,6 +228,10 @@ type CheckinDataSvc interface {
 }
 
 type JiraDataSvc interface {
+	GetPokerJiraSettings(ctx context.Context, pokerID string) (thunderdome.PokerJiraSettings, error)
+	SavePokerJiraSettings(ctx context.Context, pokerID, userID string, settings thunderdome.PokerJiraSettings) error
+	RetryPokerJiraSync(ctx context.Context, pokerID, storyID string) error
+	ProcessPokerJiraSync(ctx context.Context, write func(context.Context, thunderdome.JiraInstance, thunderdome.PokerJiraWrite) error) (*thunderdome.PokerJiraSyncEvent, error)
 	FindInstancesByUserID(ctx context.Context, userId string) ([]thunderdome.JiraInstance, error)
 	GetInstanceByID(ctx context.Context, instanceId string) (thunderdome.JiraInstance, error)
 	CreateInstance(ctx context.Context, userId string, host string, clientMail string, accessToken string, jiraDataCenter bool) (thunderdome.JiraInstance, error)
@@ -403,7 +407,6 @@ type PokerDataSvc interface {
 	// RetractVote retracts a user's vote for a story in a poker game
 	RetractVote(pokerID string, userID string, storyID string, category string) ([]*thunderdome.Story, error)
 	EndExpiredStoryVoting(ctx context.Context) ([]*thunderdome.PokerVotingExpiration, error)
-	GetStories(pokerID string, userID string) []*thunderdome.Story
 	// EndStoryVoting ends voting for a story in a poker game
 	EndStoryVoting(pokerID string, storyID string) ([]*thunderdome.Story, error)
 	// SkipStory skips a story in a poker game

@@ -83,7 +83,7 @@ func New(apiService Service, FSS fs.FS, HFS http.FileSystem) *Service {
 		PingPeriodSec:      a.Config.WebsocketConfig.PingPeriodSec,
 		AppDomain:          a.Config.AppDomain,
 		WebsocketSubdomain: a.Config.WebsocketConfig.WebsocketSubdomain,
-	}, a.Logger, a.Cookie.ValidateSessionCookie, a.Cookie.ValidateUserCookie, a.UserDataSvc, a.AuthDataSvc, a.PokerDataSvc)
+	}, a.Logger, a.Cookie.ValidateSessionCookie, a.Cookie.ValidateUserCookie, a.UserDataSvc, a.AuthDataSvc, a.PokerDataSvc, a.JiraDataSvc)
 	retroSvc := retro.New(retro.Config{
 		WriteWaitSec:       a.Config.WebsocketConfig.WriteWaitSec,
 		PongWaitSec:        a.Config.WebsocketConfig.PongWaitSec,
@@ -348,6 +348,10 @@ func New(apiService Service, FSS fs.FS, HFS http.FileSystem) *Service {
 		router.Handle("DELETE "+prefix+"/api/maintenance/clean-battles", a.userOnly(a.adminOnly(a.handleCleanPokerGames())))
 		router.Handle("GET "+prefix+"/api/battles", a.userOnly(a.adminOnly(a.handleGetPokerGames())))
 		router.Handle("GET "+prefix+"/api/battles/{battleId}", a.userOnly(a.handleGetPokerGame()))
+		router.Handle("GET "+prefix+"/api/battles/{battleId}/jira-writeback", a.userOnly(a.subscribedUserOnly(a.handleGetPokerJiraSettings())))
+		router.Handle("PUT "+prefix+"/api/battles/{battleId}/jira-writeback", a.userOnly(a.subscribedUserOnly(a.handleSavePokerJiraSettings(pokerSvc))))
+		router.Handle("GET "+prefix+"/api/battles/{battleId}/jira-writeback/fields", a.userOnly(a.subscribedUserOnly(a.handlePokerJiraFields())))
+		router.Handle("POST "+prefix+"/api/battles/{battleId}/plans/{planId}/jira-retry", a.userOnly(a.subscribedUserOnly(a.handleRetryPokerJiraSync(pokerSvc))))
 		router.Handle("PATCH "+prefix+"/api/battles/{battleId}/end", a.userOnly(a.handlePokerEndGame(pokerSvc)))
 		router.Handle("DELETE "+prefix+"/api/battles/{battleId}", a.userOnly(a.handlePokerDelete(pokerSvc)))
 		router.Handle("POST "+prefix+"/api/battles/{battleId}/plans", a.userOnly(a.handlePokerStoryAdd(pokerSvc)))

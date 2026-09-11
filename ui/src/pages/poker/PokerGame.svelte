@@ -7,6 +7,9 @@
   import CategoryResults from '../../components/poker/CategoryResults.svelte';
   import { emptyCategoryVotes } from '../../components/poker/categoryEstimation';
   import { expirationMatchesRound } from '../../components/poker/votingDeadline';
+  import { applyJiraSyncEvent, preserveJiraSyncs } from '../../components/poker/jiraWriteback';
+  import JiraWritebackSettings from '../../components/poker/JiraWritebackSettings.svelte';
+  import JiraSyncStatus from '../../components/poker/JiraSyncStatus.svelte';
   import PokerStories from '../../components/poker/PokerStories.svelte';
   import HollowButton from '../../components/global/HollowButton.svelte';
   import EditPokerGame from '../../components/poker/EditPokerGame.svelte';
@@ -88,6 +91,7 @@
   });
   let currentStory = $state({ ...defaultStory });
   let showEditGame: boolean = $state(false);
+  let showJiraWriteback = $state(false);
   let showDeleteGame: boolean = $state(false);
   let isSpectator: boolean = $state(false);
   let voteStartTime: Date = $state(new Date());
@@ -98,6 +102,7 @@
   let ws: any;
 
   const onSocketMessage = function (evt: MessageEvent) {
+    const previousPlans = pokerGame.plans;
     isLoading = false;
     const parsedEvent = JSON.parse(evt.data);
 
@@ -234,6 +239,9 @@
         }
         break;
       }
+      case 'jira_sync_updated':
+        pokerGame.plans = applyJiraSyncEvent(pokerGame.plans, JSON.parse(parsedEvent.value));
+        break;
       case 'plan_finalized':
         pokerGame.plans = JSON.parse(parsedEvent.value);
         pokerGame.activePlanId = '';
@@ -305,6 +313,7 @@
       default:
         break;
     }
+    pokerGame.plans = preserveJiraSyncs(previousPlans, pokerGame.plans);
   };
 
   onMount(() => {
@@ -600,6 +609,19 @@
         {/if}
       {/if}
 
+      {#if activeStory?.jiraSync && !activeStory.active}
+        <div class="mb-4 rounded-lg bg-white dark:bg-gray-800 shadow p-4">
+          <JiraSyncStatus
+            sync={activeStory.jiraSync}
+            gameId={pokerGame.id}
+            storyId={activeStory.id}
+            canRetry={isFacilitator}
+            {xfetch}
+            {notifications}
+          />
+        </div>
+      {/if}
+
       <PokerStories
         plans={pokerGame.plans}
         {isFacilitator}
@@ -607,6 +629,7 @@
         {notifications}
         {xfetch}
         gameId={pokerGame.id}
+        activePlanId={pokerGame.activePlanId}
         {gameOver}
       />
     </div>
@@ -672,6 +695,15 @@
                 icon={Pencil}
                 label={$LL.battleEdit()}
               />
+              <SubMenuItem
+                onClickHandler={() => {
+                  showJiraWriteback = true;
+                  toggleSubmenu();
+                }}
+                testId="jira-writeback-open"
+                icon={ExternalLink}
+                label="Jira 自动回写"
+              />
               {#if !gameOver && isFacilitator}
                 <SubMenuItem
                   onClickHandler={() => {
@@ -719,6 +751,17 @@
 
   {#if showEndGameModal}
     <EndGameModal toggleModal={toggleEndGame} handleSubmit={handleEndGame} {notifications} {xfetch} />
+  {/if}
+
+  {#if showJiraWriteback}
+    <JiraWritebackSettings
+      gameId={pokerGame.id}
+      {xfetch}
+      {notifications}
+      close={() => {
+        showJiraWriteback = false;
+      }}
+    />
   {/if}
 
   {#if showDeleteGame}

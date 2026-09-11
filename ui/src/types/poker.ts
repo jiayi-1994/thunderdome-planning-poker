@@ -36,6 +36,7 @@ export type PokerStory = {
   voteDeadline?: Date;
   votes: Array<PokerStoryVote>;
   estimation?: PokerEstimation;
+  jiraSync?: PokerJiraSync;
   position: number;
 };
 
@@ -46,6 +47,29 @@ export type PokerStoryVote = {
 };
 
 export type PokerVoteCategory = 'testing' | 'frontend' | 'backend';
+
+export type PokerJiraSettings = {
+  enabled: boolean;
+  instanceId: string;
+  fieldId: string;
+  fieldName: string;
+  host: string;
+};
+
+export type PokerJiraSync = {
+  status: 'pending' | 'succeeded' | 'failed' | 'skipped' | 'cancelled';
+  issueKey: string;
+  points: string;
+  error?: string;
+  attempts: number;
+  updatedAt: string;
+};
+
+export type PokerJiraSyncEvent = {
+  planId: string;
+  voteStartTime: Date;
+  sync: PokerJiraSync;
+};
 
 export type PokerVotingExpiration = {
   planId: string;

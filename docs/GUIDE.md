@@ -169,6 +169,30 @@ This can be a list of Stories, Bugs, Tasks, etc. and serves as a queue for team 
 
 Premium feature.
 
+#### Automatically write estimates back to Jira
+
+1. Add a Jira connection under **Profile → Jira Integration**. Jira Cloud uses an email and API token; Jira Data Center uses a personal access token.
+2. As a game facilitator, open **Game Settings → Jira 自动回写**.
+3. Enable automatic writeback, choose your Jira connection, and select the site's **Story Points** (or another numeric custom field). The account must be allowed to edit that field on the target issues.
+4. Import stories from Jira, or fill in each story's Jira reference ID and matching issue link. For example, `PROJ-123` and `https://yourjira.atlassian.net/browse/PROJ-123`.
+
+When the two-minute countdown ends, a facilitator finishes voting, or auto-finish ends the round, the server writes the sum of the testing, frontend, and backend averages. Only numeric votes count toward each average; nonvoters and abstentions do not count. Zero is a valid estimate. A round with no numeric votes does not overwrite Jira. Legacy single-category voting writes after the facilitator saves its final numeric estimate.
+
+The result area shows pending, successful, or failed writeback. The server retries failed requests up to three total attempts, including after a restart. A facilitator can use **重试回写** after fixing account permissions or connection details. The local estimate remains available when Jira is unreachable. Reopening a voting round discards its previous pending task; changing the destination or disabling writeback cancels affected pending tasks. Enabling this feature does not send historical estimates.
+
+Jira connection choices are private to their owner. The game exposes only the issue key, points, and sync status to participants; credentials stay on the server. The existing subscription requirement for Jira integration applies when subscriptions are enabled.
+
+The same operations are available through the authenticated API:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/battles/{battleId}/jira-writeback` | Read settings and caller-owned connection choices |
+| GET | `/api/battles/{battleId}/jira-writeback/fields?instanceId={id}` | List numeric custom fields |
+| PUT | `/api/battles/{battleId}/jira-writeback` | Save `{ "enabled": true, "instanceId": "…", "fieldId": "customfield_…" }` |
+| POST | `/api/battles/{battleId}/plans/{planId}/jira-retry` | Retry a failed write for the current round |
+
+All four endpoints require a game facilitator. Writeback uses the official [Jira Cloud issue update API](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-issueidorkey-put) or [Jira Data Center issue update API](https://developer.atlassian.com/server/jira/platform/updating-an-issue-via-the-jira-rest-apis-6848604/) and changes only the configured field.
+
 #### Import stories from Jira XML
 
 Upload.

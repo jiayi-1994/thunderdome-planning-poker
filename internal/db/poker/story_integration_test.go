@@ -57,6 +57,13 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 	exec(strings.Split(string(deadlineMigration), "-- +goose Down")[0])
+	for _, name := range []string{"20230930180117_add_jira_tables.sql", "20250219144939_add_jiradatacenter.sql", "20260911120000_add_poker_jira_writeback.sql"} {
+		migration, err := os.ReadFile("../migrations/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		exec(strings.Split(string(migration), "-- +goose Down")[0])
+	}
 	procedures, err := os.ReadFile("../migrations/20230823233842_create_funcs_procs_triggers.sql")
 	if err != nil {
 		t.Fatal(err)
@@ -237,6 +244,12 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		}
 	})
 	// Verify the migration is reversible after actual data has been saved.
+	t.Run("Jira writeback", func(t *testing.T) { testPokerJiraWriteback(t, db, svc) })
+	jiraMigration, err := os.ReadFile("../migrations/20260911120000_add_poker_jira_writeback.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec(strings.Split(string(jiraMigration), "-- +goose Down")[1])
 	exec(strings.Split(string(deadlineMigration), "-- +goose Down")[1])
 	exec(strings.Split(string(migration), "-- +goose Down")[1])
 }
