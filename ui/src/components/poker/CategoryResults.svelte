@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PokerEstimation, PokerStoryVote, PokerUser } from '../../types/poker';
   import { voteCategories } from './categoryEstimation';
+  import { TriangleAlert } from '@lucide/svelte';
 
   interface Props {
     estimation?: PokerEstimation;
@@ -17,11 +18,31 @@
   data-testid="category-results"
 >
   <h3 class="text-xl font-semibold mb-4">分项评点结果</h3>
+  {#if estimation?.categories.some((group) => group.needsDiscussion)}
+    <div
+      role="alert"
+      class="mb-4 flex items-start gap-3 rounded-lg border border-amber-400 bg-amber-50 p-4 text-amber-900 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-100"
+    >
+      <TriangleAlert class="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+      <div>
+        <p class="font-semibold">评分分歧较大，请先讨论</p>
+        <p class="mt-1 text-sm">同一角色出现至少 4 种不同的有效分值。建议确认理解与工作范围，再决定是否重新评点。</p>
+      </div>
+    </div>
+  {/if}
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     {#each voteCategories as category}
       {@const group = estimation?.categories.find((group) => group.category === category.id)}
       <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4" data-testid={`result-${category.id}`}>
         <h4 class="font-semibold">{category.label}</h4>
+        {#if group?.needsDiscussion}
+          <p class="mt-2 font-semibold text-amber-800 dark:text-amber-200" data-testid={`discussion-${category.id}`}>
+            需要讨论 · {group.distinctValues?.length} 种分值
+          </p>
+          <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">
+            分值：{group.distinctValues?.map((value) => (value === '0.5' ? '1/2' : value)).join('、')}
+          </p>
+        {/if}
         <div class="mt-2 text-3xl font-bold" data-testid="category-average">{group?.average || '—'}</div>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
           {group?.count ? `平均点数 · ${group.count} 个有效评分` : '无有效评分，不参与合计'}

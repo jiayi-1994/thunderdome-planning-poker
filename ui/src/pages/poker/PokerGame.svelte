@@ -5,7 +5,9 @@
   import PageLayout from '../../components/PageLayout.svelte';
   import CategoryVoting from '../../components/poker/CategoryVoting.svelte';
   import CategoryResults from '../../components/poker/CategoryResults.svelte';
-  import { emptyCategoryVotes } from '../../components/poker/categoryEstimation';
+  import { emptyCategoryVotes, voteCategories } from '../../components/poker/categoryEstimation';
+  import PokerRoleSelector from '../../components/poker/PokerRoleSelector.svelte';
+  import { readPokerRole, roleForRound, savePokerRole } from '../../components/poker/pokerRole';
   import { expirationMatchesRound } from '../../components/poker/votingDeadline';
   import { applyJiraSyncEvent, preserveJiraSyncs } from '../../components/poker/jiraWriteback';
   import JiraWritebackSettings from '../../components/poker/JiraWritebackSettings.svelte';
@@ -74,6 +76,7 @@
   let socketReconnecting: boolean = $state(false);
   let points: Array<string> = $state(['1', '2', '3', '5', '8', '13', '?']);
   let categoryVotes = $state(emptyCategoryVotes());
+  let selectedCategory: PokerVoteCategory | null = $state(null);
   let pokerGame: PokerGame = $state({
     leaders: [],
     autoFinishVoting: false,
@@ -130,6 +133,10 @@
               if (ballot.warriorId === $user.id && ballot.category) categoryVotes[ballot.category] = ballot.vote;
             }
             currentStory = activePlan;
+            if (activePlan.active) {
+              selectedCategory = roleForRound(activePlan.votes, $user.id, selectedCategory);
+              if (selectedCategory) savePokerRole(battleId, $user.id, selectedCategory);
+            }
             voteStartTime = new Date(activePlan.voteStartTime);
           }
         }
@@ -224,6 +231,15 @@
         }
 
         pokerGame.plans = JSON.parse(parsedEvent.value);
+        // The server masks values in broadcasts, so keep selections until their ballot is removed.
+        for (const category of voteCategories) {
+          if (
+            !pokerGame.plans
+              .find((plan) => plan.id === pokerGame.activePlanId)
+              ?.votes.some((vote) => vote.warriorId === $user.id && vote.category === category.id)
+          )
+            categoryVotes[category.id] = '';
+        }
         break;
       case 'voting_ended':
         pokerGame.plans = JSON.parse(parsedEvent.value);
@@ -321,6 +337,7 @@
       router.route(`${loginOrRegister}/battle/${battleId}`);
       return;
     }
+    selectedCategory = readPokerRole(battleId, $user.id);
 
     ws = new Sockette(`${getWebsocketAddress()}/api/arena/${battleId}`, {
       timeout: 2e3,
@@ -371,6 +388,7 @@
   };
 
   const handleVote = (category: PokerVoteCategory, point: string) => {
+    if (category !== selectedCategory || votingDisabled) return;
     categoryVotes[category] = point;
     const voteValue = {
       planId: pokerGame.activePlanId,
@@ -383,6 +401,7 @@
   };
 
   const handleUnvote = (category: PokerVoteCategory) => {
+    if (votingDisabled) return;
     categoryVotes[category] = '';
 
     sendSocketEvent('retract_vote', JSON.stringify({ planId: pokerGame.activePlanId, category }));
@@ -454,6 +473,36 @@
   );
   let showVotingResults = $derived(pokerGame.activePlanId !== '' && pokerGame.votingLocked === true);
   let activeStory = $derived(pokerGame.plans.find((p) => p.id === pokerGame.activePlanId));
+  let votingDisabled = $derived(
+    !activeStory?.active ||
+      pokerGame.votingLocked ||
+      voteDeadlineReached ||
+      isSpectator ||
+      socketError ||
+      socketReconnecting ||
+      gameOver,
+  );
+  let roleLocked = $derived(
+    Boolean(
+      activeStory?.active &&
+      (activeStory.votes.some((vote) => vote.warriorId === $user.id) || Object.values(categoryVotes).some(Boolean)),
+    ),
+  );
+  let otherCategoryVotes = $derived(
+    activeStory?.active
+      ? voteCategories.filter(
+          (category) =>
+            category.id !== selectedCategory &&
+            activeStory.votes.some((vote) => vote.warriorId === $user.id && vote.category === category.id),
+        )
+      : [],
+  );
+
+  function selectRole(category: PokerVoteCategory) {
+    if (roleLocked || isSpectator || socketError || socketReconnecting) return;
+    selectedCategory = category;
+    savePokerRole(battleId, $user.id, category);
+  }
   let legacyResults = $derived(
     Boolean(
       showVotingResults &&
@@ -591,20 +640,46 @@
           </div>
         {:else}
           <div class="mb-4 lg:mb-6">
-            <CategoryVoting
-              {points}
-              selections={categoryVotes}
-              votes={activeStory?.votes}
-              users={pokerGame.users}
-              isLocked={!activeStory ||
-                pokerGame.votingLocked ||
-                voteDeadlineReached ||
-                isSpectator ||
-                socketError ||
-                socketReconnecting}
-              onVote={handleVote}
-              onRetract={handleUnvote}
-            />
+            {#if isSpectator}
+              <p class="rounded-lg bg-white dark:bg-gray-800 p-6 text-gray-700 dark:text-gray-200">
+                你正在旁观，评点结束后可查看三类结果和总分。
+              </p>
+            {:else}
+              <PokerRoleSelector
+                category={selectedCategory}
+                locked={roleLocked}
+                disabled={isLoading || socketError || socketReconnecting}
+                onSelect={selectRole}
+              />
+            {/if}
+            {#if otherCategoryVotes.length && !isSpectator}
+              <div
+                class="mb-4 rounded-lg border border-amber-400 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+              >
+                <p>本轮还有其他类别的已有评分。可先撤回，避免计入错误的类别。</p>
+                {#each otherCategoryVotes as category}
+                  <button
+                    type="button"
+                    disabled={votingDisabled}
+                    onclick={() => handleUnvote(category.id)}
+                    class="mt-2 mr-3 rounded border border-amber-600 px-3 py-2 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
+                    >撤回{category.label}评分</button
+                  >
+                {/each}
+              </div>
+            {/if}
+            {#if selectedCategory && !isSpectator}
+              <CategoryVoting
+                {points}
+                category={selectedCategory}
+                selections={categoryVotes}
+                votes={activeStory?.votes}
+                users={pokerGame.users}
+                isLocked={votingDisabled}
+                onVote={handleVote}
+                onRetract={handleUnvote}
+              />
+            {/if}
           </div>
         {/if}
       {/if}

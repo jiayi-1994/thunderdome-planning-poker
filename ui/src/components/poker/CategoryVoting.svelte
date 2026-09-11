@@ -4,6 +4,7 @@
 
   interface Props {
     points: string[];
+    category: PokerVoteCategory;
     selections?: Record<PokerVoteCategory, string>;
     votes?: PokerStoryVote[];
     users?: PokerUser[];
@@ -13,6 +14,7 @@
   }
   let {
     points,
+    category: selectedCategory,
     selections = emptyCategoryVotes(),
     votes = [],
     users = [],
@@ -27,12 +29,12 @@
   class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 text-gray-800 dark:text-gray-100"
   aria-label="分项评点"
 >
-  <h3 class="text-xl font-semibold">分项评点</h3>
+  <h3 class="text-xl font-semibold">我的评点</h3>
   <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 mb-5">
-    选择你参与的类别评点，可参与多类。倒计时结束后，未评分者不计入平均分的分母。再次点击已选点数可撤回。
+    仅为当前身份评点。再次点击已选点数可撤回；未评分者不计入平均分的分母。
   </p>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-    {#each voteCategories as category}
+  <div>
+    {#each voteCategories.filter((item) => item.id === selectedCategory) as category}
       <fieldset disabled={isLocked} class="min-w-0" data-testid={`voting-${category.id}`}>
         <legend class="text-lg font-semibold mb-1">{category.label}</legend>
         <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
@@ -41,7 +43,7 @@
               vote.category === category.id && users.some((user) => user.id === vote.warriorId && !user.spectator),
           ).length} 人已评点
         </p>
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-3 sm:grid-cols-5 gap-3">
           {#each values as point}
             <button
               type="button"

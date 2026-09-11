@@ -2,6 +2,7 @@ package thunderdome
 
 import (
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -9,9 +10,11 @@ import (
 var PokerVoteCategories = []string{"testing", "frontend", "backend"}
 
 type PokerCategoryAverage struct {
-	Category string `json:"category"`
-	Average  string `json:"average"`
-	Count    int    `json:"count"`
+	Category        string   `json:"category"`
+	Average         string   `json:"average"`
+	Count           int      `json:"count"`
+	DistinctValues  []string `json:"distinctValues,omitempty"`
+	NeedsDiscussion bool     `json:"needsDiscussion,omitempty"`
 }
 
 type PokerEstimation struct {
@@ -65,6 +68,7 @@ func CalculatePokerEstimation(votes []*Vote, users []*PokerUser) *PokerEstimatio
 	for _, category := range PokerVoteCategories {
 		group := PokerCategoryAverage{Category: category}
 		sum := 0.0
+		distinct := make(map[float64]bool)
 		for _, vote := range votes {
 			if vote.Category != category || !eligible[vote.UserID] {
 				continue
@@ -72,6 +76,7 @@ func CalculatePokerEstimation(votes []*Vote, users []*PokerUser) *PokerEstimatio
 			if value, valid := NumericPokerVote(vote.VoteValue); valid {
 				sum += value
 				group.Count++
+				distinct[value] = true
 			}
 		}
 		if group.Count > 0 {
@@ -80,6 +85,16 @@ func CalculatePokerEstimation(votes []*Vote, users []*PokerUser) *PokerEstimatio
 			group.Average = formatPokerPoints(average)
 			total += average
 		}
+		values := make([]float64, 0, len(distinct))
+		for value := range distinct {
+			values = append(values, value)
+		}
+		sort.Float64s(values)
+		for _, value := range values {
+			// Preserve distinct numeric values even when their rounded averages coincide.
+			group.DistinctValues = append(group.DistinctValues, strconv.FormatFloat(value, 'f', -1, 64))
+		}
+		group.NeedsDiscussion = len(values) >= 4
 		result.Categories = append(result.Categories, group)
 	}
 	if hasNumericVotes && !math.IsInf(total, 0) {

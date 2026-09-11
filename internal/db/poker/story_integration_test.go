@@ -243,6 +243,43 @@ func TestCategoryVotingDatabase(t *testing.T) {
 			t.Fatal("empty round must not invent a zero estimate")
 		}
 	})
+	t.Run("discussion warning survives reveal save and reload", func(t *testing.T) {
+		exec(`UPDATE thunderdome.poker_user SET spectator = false WHERE poker_id = $1`, game)
+		defer exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, observer)
+		for _, expire := range []bool{false, true} {
+			if _, err := svc.ActivateStoryVoting(game, story); err != nil {
+				t.Fatal(err)
+			}
+			for i, id := range []string{one, two, three, observer} {
+				vote(id, "backend", []string{"1/2", "1", "3", "5"}[i])
+			}
+			if svc.GetStories(game, one)[0].Estimation != nil {
+				t.Fatal("discussion metadata leaked before reveal")
+			}
+			if expire {
+				exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '121 seconds' WHERE id = $1`, story)
+				if _, err := svc.EndExpiredStoryVoting(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+			} else if _, err := svc.EndStoryVoting(game, story); err != nil {
+				t.Fatal(err)
+			}
+			revealed := svc.GetStories(game, one)[0]
+			if !revealed.Estimation.Categories[2].NeedsDiscussion || revealed.Estimation.Total != "2.38" {
+				t.Fatalf("missing discussion warning at reveal: %+v", revealed.Estimation)
+			}
+			if _, err := svc.FinalizeStory(game, story, "999"); err != nil {
+				t.Fatal(err)
+			}
+			exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, observer)
+			reloaded := (&Service{DB: db, Logger: svc.Logger}).GetStories(game, one)[0]
+			group := reloaded.Estimation.Categories[2]
+			if !group.NeedsDiscussion || len(group.DistinctValues) != 4 || group.Count != 4 {
+				t.Fatalf("saved warning changed with attendance: %+v", group)
+			}
+			exec(`UPDATE thunderdome.poker_user SET spectator = false WHERE user_id = $1`, observer)
+		}
+	})
 	// Verify the migration is reversible after actual data has been saved.
 	t.Run("Jira writeback", func(t *testing.T) { testPokerJiraWriteback(t, db, svc) })
 	jiraMigration, err := os.ReadFile("../migrations/20260911120000_add_poker_jira_writeback.sql")

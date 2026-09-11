@@ -78,7 +78,13 @@ export type PokerVotingExpiration = {
 };
 
 export type PokerEstimation = {
-  categories: Array<{ category: PokerVoteCategory; average: string; count: number }>;
+  categories: Array<{
+    category: PokerVoteCategory;
+    average: string;
+    count: number;
+    distinctValues?: string[];
+    needsDiscussion?: boolean;
+  }>;
   total: string;
 };
 

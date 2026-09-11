@@ -1393,6 +1393,12 @@ definitions:
         type: string
       count:
         type: integer
+      distinctValues:
+        items:
+          type: string
+        type: array
+      needsDiscussion:
+        type: boolean
     type: object
   thunderdome.PokerEstimation:
     properties:

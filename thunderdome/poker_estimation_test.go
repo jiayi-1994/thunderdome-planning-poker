@@ -1,6 +1,47 @@
 package thunderdome
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
+
+func TestPokerDiscussionThreshold(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		values  []string
+		want    []string
+		discuss bool
+	}{
+		{"four distinct scores", []string{"5", "1/2", "3", "1"}, []string{"0.5", "1", "3", "5"}, true},
+		{"three scores despite many voters", []string{"1", "3", "5", "3", "1"}, []string{"1", "3", "5"}, false},
+		{"equivalent fractions are one score", []string{"1/2", "0.5", "1", "3"}, []string{"0.5", "1", "3"}, false},
+		{"abstentions and invalid values excluded", []string{"0", "1", "3", "?", "", "NaN", "-1", "☕️"}, []string{"0", "1", "3"}, false},
+		{"zero is a distinct score", []string{"0", "1", "3", "5", "8"}, []string{"0", "1", "3", "5", "8"}, true},
+		{"do not round before comparing", []string{"1.001", "1.002", "1.003", "1.004"}, []string{"1.001", "1.002", "1.003", "1.004"}, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var users []*PokerUser
+			var votes []*Vote
+			for i, value := range test.values {
+				id := string(rune('a' + i))
+				users = append(users, &PokerUser{ID: id})
+				votes = append(votes, &Vote{UserID: id, Category: "backend", VoteValue: value})
+			}
+			users = append(users, &PokerUser{ID: "observer", Spectator: true})
+			votes = append(votes, &Vote{UserID: "observer", Category: "backend", VoteValue: "100"},
+				&Vote{UserID: "missing", Category: "backend", VoteValue: "200"},
+				&Vote{UserID: "a", Category: "testing", VoteValue: "300"})
+			result := CalculatePokerEstimation(votes, users)
+			group := result.Categories[2]
+			if group.NeedsDiscussion != test.discuss || !reflect.DeepEqual(group.DistinctValues, test.want) {
+				t.Fatalf("unexpected discussion result: %+v", group)
+			}
+			if result.Categories[0].NeedsDiscussion || result.Categories[1].NeedsDiscussion {
+				t.Fatal("different disciplines must not combine their score values")
+			}
+		})
+	}
+}
 
 func TestCalculatePokerEstimation(t *testing.T) {
 	users := []*PokerUser{{ID: "one", Active: true}, {ID: "two", Active: true}, {ID: "three", Active: true}, {ID: "observer", Spectator: true}}

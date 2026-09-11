@@ -18369,6 +18369,15 @@ const docTemplate = `{
                 },
                 "count": {
                     "type": "integer"
+                },
+                "distinctValues": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "needsDiscussion": {
+                    "type": "boolean"
                 }
             }
         },
