@@ -3,7 +3,9 @@
   import Sockette from 'sockette';
 
   import PageLayout from '../../components/PageLayout.svelte';
-  import PointCard from '../../components/poker/PointCard.svelte';
+  import CategoryVoting from '../../components/poker/CategoryVoting.svelte';
+  import CategoryResults from '../../components/poker/CategoryResults.svelte';
+  import { emptyCategoryVotes } from '../../components/poker/categoryEstimation';
   import PokerStories from '../../components/poker/PokerStories.svelte';
   import HollowButton from '../../components/global/HollowButton.svelte';
   import EditPokerGame from '../../components/poker/EditPokerGame.svelte';
@@ -15,7 +17,7 @@
   import VotingControls from '../../components/poker/VotingControls.svelte';
   import InviteUser from '../../components/poker/InviteUser.svelte';
   import VoteTimer from '../../components/poker/VoteTimer.svelte';
-  import type { PokerGame, PokerStory } from '../../types/poker';
+  import type { PokerGame, PokerStory, PokerVoteCategory } from '../../types/poker';
   import { ExternalLink, Pencil, Settings, TimerOff, Trash } from '@lucide/svelte';
   import SubMenu from '../../components/global/SubMenu.svelte';
   import SubMenuItem from '../../components/global/SubMenuItem.svelte';
@@ -67,7 +69,7 @@
   let socketError: boolean = $state(false);
   let socketReconnecting: boolean = $state(false);
   let points: Array<string> = $state(['1', '2', '3', '5', '8', '13', '?']);
-  let vote: string = $state('');
+  let categoryVotes = $state(emptyCategoryVotes());
   let pokerGame: PokerGame = $state({
     leaders: [],
     autoFinishVoting: false,
@@ -108,24 +110,27 @@
         JoinPassRequired = false;
         pokerGame = JSON.parse(parsedEvent.value);
         points = pokerGame.pointValuesAllowed;
-        const { spectator = false } = pokerGame.users.find(w => w.id === $user.id) || {};
+        const { spectator = false } = pokerGame.users.find((w) => w.id === $user.id) || {};
         isSpectator = spectator;
 
-        if (pokerGame.activePlanId !== '') {
-          const activePlan = pokerGame.plans.find(p => p.id === pokerGame.activePlanId);
-          const warriorVote = activePlan.votes.find(v => v.warriorId === $user.id) || {
-            vote: '',
-          };
-          currentStory = activePlan;
-          voteStartTime = new Date(activePlan.voteStartTime);
-          vote = warriorVote.vote;
+        currentStory = { ...defaultStory };
+        categoryVotes = emptyCategoryVotes();
+        if (pokerGame.activePlanId) {
+          const activePlan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
+          if (activePlan) {
+            for (const ballot of activePlan.votes) {
+              if (ballot.warriorId === $user.id && ballot.category) categoryVotes[ballot.category] = ballot.vote;
+            }
+            currentStory = activePlan;
+            voteStartTime = new Date(activePlan.voteStartTime);
+          }
         }
 
         break;
       }
       case 'user_joined': {
         pokerGame.users = JSON.parse(parsedEvent.value);
-        const joinedWarrior = pokerGame.users.find(w => w.id === parsedEvent.userId);
+        const joinedWarrior = pokerGame.users.find((w) => w.id === parsedEvent.userId);
         if (joinedWarrior.id === $user.id) {
           isSpectator = joinedWarrior.spectator;
         }
@@ -140,7 +145,7 @@
         break;
       }
       case 'user_left':
-        const leftWarrior = pokerGame.users.find(w => w.id === parsedEvent.userId);
+        const leftWarrior = pokerGame.users.find((w) => w.id === parsedEvent.userId);
         pokerGame.users = JSON.parse(parsedEvent.value);
 
         if ($user.notificationsEnabled) {
@@ -154,7 +159,7 @@
         break;
       case 'users_updated':
         pokerGame.users = JSON.parse(parsedEvent.value);
-        const updatedWarrior = pokerGame.users.find(w => w.id === $user.id);
+        const updatedWarrior = pokerGame.users.find((w) => w.id === $user.id);
         isSpectator = updatedWarrior.spectator;
         break;
       case 'plan_added':
@@ -165,14 +170,14 @@
         break;
       case 'plan_activated':
         const updatedPlans = JSON.parse(parsedEvent.value);
-        const activePlan = updatedPlans.find(p => p.active);
+        const activePlan = updatedPlans.find((p) => p.active);
         currentStory = activePlan;
         voteStartTime = new Date(activePlan.voteStartTime);
 
         pokerGame.plans = updatedPlans;
         pokerGame.activePlanId = activePlan.id;
         pokerGame.votingLocked = false;
-        vote = '';
+        categoryVotes = emptyCategoryVotes();
         break;
       case 'plan_skipped':
         const updatedPlans2 = JSON.parse(parsedEvent.value);
@@ -180,13 +185,13 @@
         pokerGame.plans = updatedPlans2;
         pokerGame.activePlanId = '';
         pokerGame.votingLocked = true;
-        vote = '';
+        categoryVotes = emptyCategoryVotes();
         if ($user.notificationsEnabled) {
           notifications.warning($LL.planSkipped());
         }
         break;
       case 'vote_activity':
-        const votedWarrior = pokerGame.users.find(w => w.id === parsedEvent.userId);
+        const votedWarrior = pokerGame.users.find((w) => w.id === parsedEvent.userId);
         if ($user.notificationsEnabled) {
           notifications.success(
             `${$LL.warriorVoted({
@@ -199,7 +204,7 @@
         pokerGame.plans = JSON.parse(parsedEvent.value);
         break;
       case 'vote_retracted':
-        const devotedWarrior = pokerGame.users.find(w => w.id === parsedEvent.userId);
+        const devotedWarrior = pokerGame.users.find((w) => w.id === parsedEvent.userId);
         if ($user.notificationsEnabled) {
           notifications.warning(
             `${$LL.warriorRetractedVote({
@@ -219,19 +224,22 @@
         pokerGame.plans = JSON.parse(parsedEvent.value);
         pokerGame.activePlanId = '';
         currentStory = { ...defaultStory };
-        vote = '';
+        categoryVotes = emptyCategoryVotes();
         break;
       case 'plan_revised':
         pokerGame.plans = JSON.parse(parsedEvent.value);
         if (pokerGame.activePlanId !== '') {
-          const activePlan = pokerGame.plans.find(p => p.id === pokerGame.activePlanId);
-          currentStory = activePlan;
+          const activePlan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
+          currentStory = activePlan || { ...defaultStory };
         }
         break;
       case 'plan_burned':
         const postBurnPlans = JSON.parse(parsedEvent.value);
 
-        if (pokerGame.activePlanId !== '' && postBurnPlans.filter(p => p.id === pokerGame.activePlanId).length === 0) {
+        if (
+          pokerGame.activePlanId !== '' &&
+          postBurnPlans.filter((p) => p.id === pokerGame.activePlanId).length === 0
+        ) {
           pokerGame.activePlanId = '';
           currentStory = { ...defaultStory };
         }
@@ -263,7 +271,7 @@
         router.route(appRoutes.games);
         break;
       case 'jab_warrior':
-        const userToNudge = pokerGame.users.find(w => w.id === parsedEvent.value);
+        const userToNudge = pokerGame.users.find((w) => w.id === parsedEvent.value);
         notifications.info(
           `${$LL.warriorNudgeMessage({
             name: userToNudge.name,
@@ -295,10 +303,10 @@
       timeout: 2e3,
       maxAttempts: 15,
       onmessage: onSocketMessage,
-      onerror: err => {
+      onerror: (err) => {
         socketError = true;
       },
-      onclose: e => {
+      onclose: (e) => {
         if (e.code === 4004) {
           router.route(appRoutes.games);
         } else if (e.code === 4001) {
@@ -339,21 +347,22 @@
     );
   };
 
-  const handleVote = (event: CustomEvent<{ point: string }>) => {
-    vote = event.detail.point;
+  const handleVote = (category: PokerVoteCategory, point: string) => {
+    categoryVotes[category] = point;
     const voteValue = {
       planId: pokerGame.activePlanId,
-      voteValue: vote,
+      voteValue: point,
+      category,
       autoFinishVoting: pokerGame.autoFinishVoting,
     };
 
     sendSocketEvent('vote', JSON.stringify(voteValue));
   };
 
-  const handleUnvote = () => {
-    vote = '';
+  const handleUnvote = (category: PokerVoteCategory) => {
+    categoryVotes[category] = '';
 
-    sendSocketEvent('retract_vote', pokerGame.activePlanId);
+    sendSocketEvent('retract_vote', JSON.stringify({ planId: pokerGame.activePlanId, category }));
   };
 
   // Determine if the warrior has voted on active Plan yet
@@ -361,8 +370,8 @@
     if (pokerGame.activePlanId === '' || (pokerGame.votingLocked && pokerGame.hideVoterIdentity)) {
       return false;
     }
-    const plan = pokerGame.plans.find(p => p.id === pokerGame.activePlanId);
-    const voted = plan.votes.find(w => w.warriorId === warriorId);
+    const plan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
+    const voted = plan?.votes.find((w) => w.warriorId === warriorId);
 
     return voted !== undefined;
   }
@@ -372,8 +381,8 @@
     if (pokerGame.hideVoterIdentity || pokerGame.activePlanId === '' || pokerGame.votingLocked === false) {
       return '';
     }
-    const story = pokerGame.plans.find(p => p.id === pokerGame.activePlanId);
-    const voted = story.votes.find(w => w.warriorId === warriorId);
+    const story = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
+    const voted = story?.votes.find((w) => w.warriorId === warriorId && !w.category);
 
     return voted !== undefined ? voted.vote : '';
   }
@@ -381,23 +390,23 @@
   // get highest vote from active story
   function getHighestVote() {
     const voteCounts: Record<string, number> = {};
-    points.forEach(p => {
+    points.forEach((p) => {
       voteCounts[p] = 0;
     });
     const highestVote = {
       vote: '',
       count: 0,
     };
-    const activePlan = pokerGame.plans.find(p => p.id === pokerGame.activePlanId);
+    const activePlan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
 
     if (activePlan.votes.length > 0) {
-      const reversedPoints = [...points].filter(v => v !== '?' && v !== '☕️').reverse();
+      const reversedPoints = [...points].filter((v) => v !== '?' && v !== '☕️').reverse();
       reversedPoints.push('?');
       reversedPoints.push('☕️');
 
       // build a count of each vote
-      activePlan.votes.forEach(v => {
-        const voteWarrior = pokerGame.users.find(w => w.id === v.warriorId) || {};
+      activePlan.votes.forEach((v) => {
+        const voteWarrior = pokerGame.users.find((w) => w.id === v.warriorId) || {};
         const { spectator = false } = voteWarrior;
 
         if (typeof voteCounts[v.vote] !== 'undefined' && !spectator) {
@@ -406,7 +415,7 @@
       });
 
       // find the highest vote giving priority to higher numbers
-      reversedPoints.forEach(p => {
+      reversedPoints.forEach((p) => {
         if (voteCounts[p] > highestVote.count) {
           highestVote.vote = p;
           highestVote.count = voteCounts[p];
@@ -421,6 +430,15 @@
     pokerGame.activePlanId !== '' && pokerGame.votingLocked === true ? getHighestVote() : '',
   );
   let showVotingResults = $derived(pokerGame.activePlanId !== '' && pokerGame.votingLocked === true);
+  let activeStory = $derived(pokerGame.plans.find((p) => p.id === pokerGame.activePlanId));
+  let legacyResults = $derived(
+    Boolean(
+      showVotingResults &&
+      activeStory &&
+      activeStory.votes.length > 0 &&
+      activeStory.votes.every((vote) => !vote.category),
+    ),
+  );
 
   let isFacilitator = $derived(pokerGame.leaders.includes($user.id));
 
@@ -522,28 +540,35 @@
   <div class="flex flex-wrap mb-4 -mx-4">
     <div class="w-full lg:w-3/4 px-4">
       {#if !gameOver}
-        {#if showVotingResults}
+        {#if legacyResults}
           <div class=" mb-2 md:mb-4">
             <VotingMetrics
               pointValues={points}
-              votes={pokerGame.plans.find(p => p.id === pokerGame.activePlanId).votes}
+              votes={pokerGame.plans.find((p) => p.id === pokerGame.activePlanId).votes}
               users={pokerGame.users}
               averageRounding={pokerGame.pointAverageRounding}
             />
           </div>
+        {:else if showVotingResults}
+          <div class="mb-4">
+            <CategoryResults
+              estimation={activeStory?.estimation}
+              votes={activeStory?.votes}
+              users={pokerGame.users}
+              hideVoterIdentity={pokerGame.hideVoterIdentity}
+            />
+          </div>
         {:else}
-          <div class="flex flex-wrap mb-4 -mx-2 mb-4 lg:mb-6">
-            {#each points as point}
-              <div class="w-1/4 md:w-1/6 px-2 mb-4">
-                <PointCard
-                  {point}
-                  active={vote === point}
-                  on:voted={handleVote}
-                  on:voteRetraction={handleUnvote}
-                  isLocked={pokerGame.votingLocked || isSpectator}
-                />
-              </div>
-            {/each}
+          <div class="mb-4 lg:mb-6">
+            <CategoryVoting
+              {points}
+              selections={categoryVotes}
+              votes={activeStory?.votes}
+              users={pokerGame.users}
+              isLocked={!activeStory || pokerGame.votingLocked || isSpectator || socketError || socketReconnecting}
+              onVote={handleVote}
+              onRetract={handleUnvote}
+            />
           </div>
         {/if}
       {/if}
@@ -590,6 +615,8 @@
             {sendSocketEvent}
             votingLocked={pokerGame.votingLocked}
             highestVote={highestVoteCount}
+            categoryEstimation={!legacyResults}
+            calculatedPoints={activeStory?.estimation?.total || ''}
           />
         {/if}
       </div>

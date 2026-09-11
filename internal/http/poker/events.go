@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/StevenWeathers/thunderdome-planning-poker/internal/wshub"
 	"github.com/StevenWeathers/thunderdome-planning-poker/thunderdome"
@@ -22,6 +23,7 @@ func (s *Service) UserVote(ctx context.Context, pokerID string, userID string, e
 	var msg []byte
 	var wv struct {
 		VoteValue        string `json:"voteValue"`
+		Category         string `json:"category"`
 		StoryID          string `json:"planId"`
 		AutoFinishVoting bool   `json:"autoFinishVoting"`
 	}
@@ -30,7 +32,10 @@ func (s *Service) UserVote(ctx context.Context, pokerID string, userID string, e
 		return nil, nil, err, false
 	}
 
-	storys, allVoted := s.PokerService.SetVote(pokerID, userID, wv.StoryID, wv.VoteValue)
+	storys, allVoted, err := s.PokerService.SetVote(pokerID, userID, wv.StoryID, wv.VoteValue, wv.Category)
+	if err != nil {
+		return nil, nil, err, false
+	}
 
 	updatedStorys, _ := json.Marshal(storys)
 	msg = wshub.CreateSocketEvent("vote_activity", string(updatedStorys), userID)
@@ -50,8 +55,19 @@ func (s *Service) UserVote(ctx context.Context, pokerID string, userID string, e
 // UserVoteRetract handles retracting a user vote
 func (s *Service) UserVoteRetract(ctx context.Context, pokerID string, userID string, eventValue string) (any, []byte, error, bool) {
 	storyID := eventValue
+	category := ""
+	if strings.HasPrefix(strings.TrimSpace(eventValue), "{") {
+		var request struct {
+			StoryID  string `json:"planId"`
+			Category string `json:"category"`
+		}
+		if err := json.Unmarshal([]byte(eventValue), &request); err != nil {
+			return nil, nil, err, false
+		}
+		storyID, category = request.StoryID, request.Category
+	}
 
-	plans, err := s.PokerService.RetractVote(pokerID, userID, storyID)
+	plans, err := s.PokerService.RetractVote(pokerID, userID, storyID, category)
 	if err != nil {
 		return nil, nil, err, false
 	}

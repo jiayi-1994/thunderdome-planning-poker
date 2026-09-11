@@ -3,6 +3,8 @@
   import LL from '../../i18n/i18n-svelte';
   import { Ban, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, ExternalLink } from '@lucide/svelte';
   import Bars2 from '../icons/Bars2.svelte';
+  import CategoryResults from './CategoryResults.svelte';
+  import type { PokerEstimation } from '../../types/poker';
 
   interface Props {
     togglePlanView?: any;
@@ -13,6 +15,7 @@
     description?: string;
     acceptanceCriteria?: string;
     priority?: number;
+    estimation?: PokerEstimation;
   }
 
   let {
@@ -24,6 +27,7 @@
     description = '',
     acceptanceCriteria = '',
     priority = 99,
+    estimation,
   }: Props = $props();
 
   const priorities = {
@@ -59,6 +63,9 @@
 </script>
 
 <Modal closeModal={togglePlanView} widthClasses="md:w-2/3 lg:w-3/5" ariaLabel={$LL.modalViewPokerStory()}>
+  {#if estimation}
+    <div class="mb-4"><CategoryResults {estimation} /></div>
+  {/if}
   <div class="mb-4 dark:text-white">
     <div class="font-bold mb-2 dark:text-gray-400">
       {$LL.planType()}

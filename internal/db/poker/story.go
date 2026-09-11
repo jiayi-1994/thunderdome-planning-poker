@@ -13,10 +13,11 @@ import (
 // GetStories retrieves stories for given poker game
 func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story {
 	var stories = make([]*thunderdome.Story, 0)
+	users := d.GetUsers(pokerID)
 	storyRows, storiesErr := d.DB.Query(
 		`SELECT
 			id, name, type, reference_id, link, description, acceptance_criteria, priority,
-			points, active, skipped, votestart_time, voteend_time, votes,
+			points, active, skipped, votestart_time, voteend_time, votes, estimation,
 			row_number() OVER (ORDER BY position ASC) as position
 			FROM thunderdome.poker_story WHERE poker_id = $1 ORDER BY position
 		`,
@@ -26,6 +27,7 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 		defer storyRows.Close()
 		for storyRows.Next() {
 			var v string
+			var estimation []byte
 			var referenceID sql.NullString
 			var link sql.NullString
 			var description sql.NullString
@@ -37,7 +39,7 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 			}
 			if err := storyRows.Scan(
 				&p.ID, &p.Name, &p.Type, &referenceID, &link, &description, &acceptanceCriteria, &p.Priority,
-				&p.Points, &p.Active, &p.Skipped, &p.VoteStartTime, &p.VoteEndTime, &v, &p.Position,
+				&p.Points, &p.Active, &p.Skipped, &p.VoteStartTime, &p.VoteEndTime, &v, &estimation, &p.Position,
 			); err != nil {
 				d.Logger.Error("get poker stories query error", zap.Error(err),
 					zap.String("PokerID", pokerID), zap.String("UserID", userID))
@@ -50,6 +52,16 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 				if err != nil {
 					d.Logger.Error("get poker stories query scan error", zap.Error(err),
 						zap.String("PokerID", pokerID), zap.String("UserID", userID))
+				}
+
+				if !p.Active {
+					if len(estimation) > 0 {
+						if err := json.Unmarshal(estimation, &p.Estimation); err != nil {
+							d.Logger.Error("decode poker estimation", zap.Error(err))
+						}
+					} else {
+						p.Estimation = thunderdome.CalculatePokerEstimation(p.Votes, users)
+					}
 				}
 
 				// don't send others vote values to client, prevent sneaky devs from peaking at votes
@@ -102,6 +114,7 @@ func (d *Service) ActivateStoryVoting(pokerID string, storyID string) ([]*thunde
 	); err != nil {
 		d.Logger.Error("CALL thunderdome.poker_story_activate error", zap.Error(err),
 			zap.String("PokerID", pokerID), zap.String("StoryID", storyID))
+		return nil, fmt.Errorf("activate poker voting: %w", err)
 	}
 
 	stories := d.GetStories(pokerID, "")
@@ -110,69 +123,60 @@ func (d *Service) ActivateStoryVoting(pokerID string, storyID string) ([]*thunde
 }
 
 // SetVote sets a users vote for the story
-func (d *Service) SetVote(pokerID string, userID string, storyID string, voteValue string) (Stories []*thunderdome.Story, allUsersVoted bool) {
-	if _, err := d.DB.Exec(
-		`UPDATE thunderdome.poker_story p1
-		SET votes = (
-			SELECT json_agg(data)
-			FROM (
-				SELECT coalesce(newVote."warriorId", oldVote."warriorId") AS "warriorId", coalesce(newVote.vote, oldVote.vote) AS vote
-				FROM jsonb_populate_recordset(null::thunderdome.UsersVote,p1.votes) AS oldVote
-				FULL JOIN jsonb_populate_recordset(null::thunderdome.UsersVote,
-					('[{"warriorId":"'|| $2::TEXT ||'", "vote":"'|| $3 ||'"}]')::JSONB
-				) AS newVote
-				ON newVote."warriorId" = oldVote."warriorId"
-			) data
-		)
-		WHERE p1.id = $1;`,
-		storyID, userID, voteValue); err != nil {
-		d.Logger.Error("CALL thunderdome.poker_user_vote_set error", zap.Error(err),
-			zap.String("PokerID", pokerID), zap.String("UserID", userID),
-			zap.String("StoryID", storyID), zap.String("VoteValue", voteValue))
-	}
-
-	stories := d.GetStories(pokerID, "")
-	activeUsers := d.GetActiveUsers(pokerID)
-
-	// determine if all active users have voted
-	allVoted := true
-	for _, story := range stories {
-		if story.ID == storyID {
-			activePlanVoters := make(map[string]bool)
-
-			for _, vote := range story.Votes {
-				activePlanVoters[vote.UserID] = true
-			}
-			for _, war := range activeUsers {
-				if _, UserVoted := activePlanVoters[war.ID]; !UserVoted && !war.Spectator {
-					allVoted = false
-					break
-				}
-			}
-			break
+func (d *Service) SetVote(pokerID string, userID string, storyID string, voteValue string, category string) ([]*thunderdome.Story, bool, error) {
+	if category != "" {
+		if !thunderdome.ValidPokerCategory(category) {
+			return nil, false, fmt.Errorf("invalid vote category")
+		}
+		if _, valid := thunderdome.NumericPokerVote(voteValue); !valid && voteValue != "?" && voteValue != "☕️" {
+			return nil, false, fmt.Errorf("category votes must be non-negative numbers or abstentions")
 		}
 	}
-
-	return stories, allVoted
+	var rawVotes []byte
+	err := d.DB.QueryRow(
+		`UPDATE thunderdome.poker_story s SET votes = (
+			SELECT coalesce(jsonb_agg(v), '[]'::jsonb)
+			FROM jsonb_array_elements(s.votes) v
+			WHERE NOT (v->>'warriorId' = $2 AND coalesce(v->>'category', '') = $4)
+		) || jsonb_build_array(jsonb_build_object('warriorId', $2::text, 'vote', $3::text, 'category', $4::text)),
+		updated_date = NOW()
+		FROM thunderdome.poker p
+		WHERE s.id = $1 AND s.poker_id = $5 AND p.id = s.poker_id
+		AND s.active AND NOT p.voting_locked AND p.active_story_id = s.id AND p.end_time IS NULL
+		AND EXISTS (SELECT 1 FROM thunderdome.poker_user u
+			WHERE u.poker_id = p.id AND u.user_id::text = $2 AND NOT u.spectator)
+		RETURNING s.votes`, storyID, userID, voteValue, category, pokerID).Scan(&rawVotes)
+	if err != nil {
+		return nil, false, fmt.Errorf("set poker vote: %w", err)
+	}
+	var votes []*thunderdome.Vote
+	if err := json.Unmarshal(rawVotes, &votes); err != nil {
+		return nil, false, err
+	}
+	allVoted := thunderdome.AllPokerUsersVoted(votes, d.GetUsers(pokerID))
+	return d.GetStories(pokerID, ""), allVoted, nil
 }
 
 // RetractVote removes a users vote for the story
-func (d *Service) RetractVote(pokerID string, userID string, storyID string) ([]*thunderdome.Story, error) {
-	if _, err := d.DB.Exec(
-		`UPDATE thunderdome.poker_story p1
-		SET votes = (
-			SELECT coalesce(json_agg(data), '[]'::JSON)
-			FROM (
-				SELECT coalesce(oldVote."warriorId") AS "warriorId", coalesce(oldVote.vote) AS vote
-				FROM jsonb_populate_recordset(null::thunderdome.UsersVote,p1.votes) AS oldVote
-				WHERE oldVote."warriorId" != $2
-			) data
-		)
-		WHERE p1.id = $1;
-    `, storyID, userID); err != nil {
-		d.Logger.Error("poker retract vote query error", zap.Error(err),
-			zap.String("PokerID", pokerID), zap.String("UserID", userID), zap.String("StoryID", storyID))
-		return nil, fmt.Errorf("poker retract vote query error: %v", err)
+func (d *Service) RetractVote(pokerID string, userID string, storyID string, category string) ([]*thunderdome.Story, error) {
+	if category != "" && !thunderdome.ValidPokerCategory(category) {
+		return nil, fmt.Errorf("invalid vote category")
+	}
+	result, err := d.DB.Exec(
+		`UPDATE thunderdome.poker_story s SET votes = (
+			SELECT coalesce(jsonb_agg(v), '[]'::jsonb) FROM jsonb_array_elements(s.votes) v
+			WHERE NOT (v->>'warriorId' = $2 AND coalesce(v->>'category', '') = $3)
+		), updated_date = NOW()
+		FROM thunderdome.poker p
+		WHERE s.id = $1 AND s.poker_id = $4 AND p.id = s.poker_id
+		AND s.active AND NOT p.voting_locked AND p.active_story_id = s.id AND p.end_time IS NULL
+		AND EXISTS (SELECT 1 FROM thunderdome.poker_user u
+			WHERE u.poker_id = p.id AND u.user_id::text = $2 AND NOT u.spectator)`, storyID, userID, category, pokerID)
+	if err != nil {
+		return nil, fmt.Errorf("retract poker vote: %w", err)
+	}
+	if count, err := result.RowsAffected(); err != nil || count != 1 {
+		return nil, fmt.Errorf("voting is not active")
 	}
 
 	stories := d.GetStories(pokerID, "")
@@ -186,6 +190,7 @@ func (d *Service) EndStoryVoting(pokerID string, storyID string) ([]*thunderdome
 		`CALL thunderdome.poker_plan_voting_stop($1, $2);`, pokerID, storyID); err != nil {
 		d.Logger.Error("CALL thunderdome.poker_plan_voting_stop error", zap.Error(err),
 			zap.String("PokerID", pokerID), zap.String("StoryID", storyID))
+		return nil, fmt.Errorf("end poker voting: %w", err)
 	}
 
 	stories := d.GetStories(pokerID, "")
@@ -310,12 +315,49 @@ func (d *Service) ArrangeStory(pokerID string, storyID string, beforeStoryID str
 
 // FinalizeStory sets story to active: false and updates the points
 func (d *Service) FinalizeStory(pokerID string, storyID string, points string) ([]*thunderdome.Story, error) {
-	if _, err := d.DB.Exec(
-		`CALL thunderdome.poker_story_finalize($1, $2, $3);`, pokerID, storyID, points); err != nil {
-		d.Logger.Error("CALL thunderdome.poker_story_finalize error", zap.Error(err),
-			zap.String("PokerID", pokerID),
-			zap.String("StoryID", storyID),
-			zap.String("Points", points))
+	users := d.GetUsers(pokerID)
+	tx, err := d.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	var rawVotes []byte
+	if err := tx.QueryRow(`SELECT s.votes FROM thunderdome.poker_story s
+		JOIN thunderdome.poker p ON p.id = s.poker_id
+		WHERE s.id = $1 AND p.id = $2 AND p.active_story_id = s.id
+		AND p.voting_locked AND NOT s.active AND p.end_time IS NULL FOR UPDATE OF p, s`,
+		storyID, pokerID).Scan(&rawVotes); err != nil {
+		return nil, fmt.Errorf("finalize poker story: %w", err)
+	}
+	var votes []*thunderdome.Vote
+	if err := json.Unmarshal(rawVotes, &votes); err != nil {
+		return nil, err
+	}
+	if len(votes) == 0 {
+		return nil, fmt.Errorf("cannot finalize a story without votes")
+	}
+	var snapshot any
+	if estimation := thunderdome.CalculatePokerEstimation(votes, users); estimation != nil {
+		if estimation.Total == "" {
+			return nil, fmt.Errorf("each category needs at least one numeric vote")
+		}
+		points = estimation.Total
+		encoded, err := json.Marshal(estimation)
+		if err != nil {
+			return nil, err
+		}
+		snapshot = string(encoded)
+	}
+	if _, err := tx.Exec(`UPDATE thunderdome.poker_story SET points = $3, estimation = $4::jsonb,
+		active = false, updated_date = NOW() WHERE id = $1 AND poker_id = $2`, storyID, pokerID, points, snapshot); err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(`UPDATE thunderdome.poker SET active_story_id = NULL,
+		updated_date = NOW(), last_active = NOW() WHERE id = $1`, pokerID); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	stories := d.GetStories(pokerID, "")

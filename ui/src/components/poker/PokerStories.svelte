@@ -12,6 +12,7 @@
   import type { ApiClient } from '../../types/apiclient';
   import Badge from '../global/Badge.svelte';
   import { onMount } from 'svelte';
+  import type { PokerEstimation } from '../../types/poker';
 
   interface Props {
     plans?: any;
@@ -42,6 +43,7 @@
     description: '',
     acceptanceCriteria: '',
     priority: 99,
+    estimation: undefined as PokerEstimation | undefined,
   };
 
   let priorities = {
@@ -138,7 +140,7 @@
   let pointedPlans = $derived(plans.filter(p => p.points !== ''));
   let totalPoints = $derived(
     pointedPlans.reduce((previousValue, currentValue) => {
-      var currentPoints = currentValue.points === '1/2' ? 0.5 : parseInt(currentValue.points);
+      var currentPoints = currentValue.points === '1/2' ? 0.5 : Number(currentValue.points);
       return isNaN(currentPoints) ? previousValue : previousValue + currentPoints;
     }, 0),
   );
@@ -389,7 +391,7 @@
           class="inline-block font-bold text-green-600 dark:text-lime-400
                         border-green-500 dark:border-lime-400 border px-2 py-1 rounded ms-2"
         >
-          {totalPoints}
+          {Number(totalPoints.toFixed(2))}
         </div>
       </div>
     </div>
@@ -416,6 +418,7 @@
 {#if showViewPlan}
   <ViewPlan
     togglePlanView={togglePlanView(null)}
+    estimation={selectedPlan.estimation}
     planName={selectedPlan.name}
     planType={selectedPlan.type}
     referenceId={selectedPlan.referenceId}

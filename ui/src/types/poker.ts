@@ -34,12 +34,21 @@ export type PokerStory = {
   voteEndTime: Date;
   voteStartTime: Date;
   votes: Array<PokerStoryVote>;
+  estimation?: PokerEstimation;
   position: number;
 };
 
 export type PokerStoryVote = {
   vote: string;
   warriorId: string;
+  category?: PokerVoteCategory;
+};
+
+export type PokerVoteCategory = 'testing' | 'frontend' | 'backend';
+
+export type PokerEstimation = {
+  categories: Array<{ category: PokerVoteCategory; average: string; count: number }>;
+  total: string;
 };
 
 export type PokerUser = {

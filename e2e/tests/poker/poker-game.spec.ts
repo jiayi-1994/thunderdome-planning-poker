@@ -209,14 +209,14 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(
       "[Voting not started]",
     );
-    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="true"]')).toHaveCount(8);
+    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="true"]')).toHaveCount(24);
 
     await bp.page.locator('[data-testid="plan-activate"]').click();
 
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(
       scarletPlan.name,
     );
-    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="false"]')).toHaveCount(8);
+    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="false"]')).toHaveCount(24);
   });
 
   test("should allow skipping story voting", async ({ registeredPage }) => {
@@ -226,21 +226,21 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(
       "[Voting not started]",
     );
-    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="true"]')).toHaveCount(8);
+    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="true"]')).toHaveCount(24);
 
     await bp.page.locator('[data-testid="plan-activate"]').click();
 
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(
       thanosPlan.name,
     );
-    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="false"]')).toHaveCount(8);
+    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="false"]')).toHaveCount(24);
 
     await bp.page.locator('[data-testid="voting-skip"]').click();
 
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(
       "[Voting not started]",
     );
-    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="true"]')).toHaveCount(8);
+    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="true"]')).toHaveCount(24);
   });
 
   test("should allow finishing story voting", async ({ registeredPage }) => {
@@ -250,24 +250,20 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(
       "[Voting not started]",
     );
-    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="true"]')).toHaveCount(8);
+    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="true"]')).toHaveCount(24);
 
     await bp.page.locator('[data-testid="plan-activate"]').click();
 
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(lokiPlan.name);
-    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="false"]')).toHaveCount(8);
+    await expect(bp.page.locator('[data-testid="pointCard"][data-locked="false"]')).toHaveCount(24);
 
-    await expect(bp.page.locator('[data-testid="voteresult-total"]')).not.toBeVisible();
-    await expect(bp.page.locator('[data-testid="voteresult-average"]')).not.toBeVisible();
-    await expect(bp.page.locator('[data-testid="voteresult-consensus"]')).not.toBeVisible();
-    await expect(bp.page.locator('[data-testid="voteresult-agreement"]')).not.toBeVisible();
+    await expect(bp.page.getByTestId("category-results")).not.toBeVisible();
 
     await bp.page.locator('[data-testid="voting-finish"]').click();
 
-    await expect(bp.page.locator('[data-testid="voteresult-total"]')).toBeVisible();
-    await expect(bp.page.locator('[data-testid="voteresult-average"]')).toBeVisible();
-    await expect(bp.page.locator('[data-testid="voteresult-consensus"]')).toBeVisible();
-    await expect(bp.page.locator('[data-testid="voteresult-agreement"]')).toBeVisible();
+    await expect(bp.page.getByTestId("category-results")).toBeVisible();
+    await expect(bp.page.getByTestId("category-total")).toHaveText("待评点");
+    await expect(bp.page.getByTestId("voting-save")).toBeDisabled();
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(lokiPlan.name);
     await expect(bp.page.locator('[data-testid="pointCard"]')).not.toBeVisible();
   });
@@ -285,11 +281,12 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     );
     await bp.page.locator('[data-testid="plan-activate"]').click();
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(lokiPlan.name);
+    await bp.page.getByRole("button", { name: "测试 2 点", exact: true }).click();
+    await bp.page.getByRole("button", { name: "前端开发 3 点", exact: true }).click();
+    await bp.page.getByRole("button", { name: "后端开发 5 点", exact: true }).click();
     await bp.page.locator('[data-testid="voting-finish"]').click();
 
-    await expect(bp.page.locator('[data-testid="voteresult-total"]')).toBeVisible();
-
-    await bp.page.locator('select[name="planPoints"]').selectOption("1");
+    await expect(bp.page.getByTestId("category-total")).toHaveText("10");
     await bp.page.locator('[data-testid="voting-save"]').click();
 
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(
@@ -301,7 +298,12 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     await expect(bp.page.locator('[data-testid="plans-pointed"]')).toHaveText("Pointed (1)");
     await bp.page.locator('[data-testid="plans-pointed"]').click();
     await expect(bp.page.locator('[data-testid="plan-name"]')).toHaveText(lokiPlan.name);
-    await expect(bp.page.locator('[data-testid="plan-points"]')).toHaveText("1");
+    await expect(bp.page.locator('[data-testid="plan-points"]')).toHaveText("10");
+    await bp.page.reload();
+    await bp.page.getByTestId("plans-pointed").click();
+    await expect(bp.page.getByTestId("plan-points")).toHaveText("10");
+    await bp.page.getByTestId("plan-view").click();
+    await expect(bp.page.getByTestId("category-total")).toHaveText("10");
   });
 
   test("delete game confirmation cancel does not delete game", async ({ registeredPage }) => {

@@ -46,25 +46,27 @@ type Poker struct {
 type Vote struct {
 	UserID    string `json:"warriorId"`
 	VoteValue string `json:"vote"`
+	Category  string `json:"category,omitempty"`
 }
 
 // Story aka Story structure
 type Story struct {
-	ID                 string    `json:"id"`
-	Name               string    `json:"name"`
-	Type               string    `json:"type"`
-	ReferenceID        string    `json:"referenceId"`
-	Link               string    `json:"link"`
-	Description        string    `json:"description"`
-	AcceptanceCriteria string    `json:"acceptanceCriteria"`
-	Priority           int32     `json:"priority"`
-	Votes              []*Vote   `json:"votes"`
-	Points             string    `json:"points"`
-	Active             bool      `json:"active"`
-	Skipped            bool      `json:"skipped"`
-	VoteStartTime      time.Time `json:"voteStartTime"`
-	VoteEndTime        time.Time `json:"voteEndTime"`
-	Position           int32     `json:"position"`
+	ID                 string           `json:"id"`
+	Name               string           `json:"name"`
+	Type               string           `json:"type"`
+	ReferenceID        string           `json:"referenceId"`
+	Link               string           `json:"link"`
+	Description        string           `json:"description"`
+	AcceptanceCriteria string           `json:"acceptanceCriteria"`
+	Priority           int32            `json:"priority"`
+	Votes              []*Vote          `json:"votes"`
+	Estimation         *PokerEstimation `json:"estimation,omitempty"`
+	Points             string           `json:"points"`
+	Active             bool             `json:"active"`
+	Skipped            bool             `json:"skipped"`
+	VoteStartTime      time.Time        `json:"voteStartTime"`
+	VoteEndTime        time.Time        `json:"voteEndTime"`
+	Position           int32            `json:"position"`
 }
 
 type EstimationScale struct {

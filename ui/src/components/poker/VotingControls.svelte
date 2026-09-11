@@ -12,9 +12,19 @@
     points?: any;
     votingLocked?: boolean;
     highestVote?: string;
+    categoryEstimation?: boolean;
+    calculatedPoints?: string;
   }
 
-  let { sendSocketEvent = () => {}, planId = '', points = [], votingLocked = true, highestVote = '' }: Props = $props();
+  let {
+    sendSocketEvent = () => {},
+    planId = '',
+    points = [],
+    votingLocked = true,
+    highestVote = '',
+    categoryEstimation = false,
+    calculatedPoints = '',
+  }: Props = $props();
 
   let customPointValue = $state(false);
 
@@ -46,12 +56,13 @@
 
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
+    if (categoryEstimation && calculatedPoints === '') return;
 
     sendSocketEvent(
       'finalize_plan',
       JSON.stringify({
         planId,
-        planPoints: customPlanPoints === '' ? planPoints : customPlanPoints,
+        planPoints: categoryEstimation ? calculatedPoints : customPlanPoints === '' ? planPoints : customPlanPoints,
       }),
     );
 
@@ -80,27 +91,42 @@
         </legend>
         <div class="-mx-2">
           <div class="mb-2">
-            <SelectInput name="planPoints" bind:value={planPoints} onchange={toggleCustomPointValue} required>
-              <option value="" disabled>
-                {$LL.points()}
-              </option>
-              {#each points as point}
-                <option value={point}>{point}</option>
-              {/each}
-              <option value="CUSTOM">Custom</option>
-            </SelectInput>
-            {#if customPointValue}
-              <TextInput
-                name="customPlanPoints"
-                bind:value={customPlanPoints}
-                placeholder="enter a custom point value..."
-                id="customPlanPoints"
-                class="mt-2"
-              />
+            {#if categoryEstimation}
+              <output
+                class="block text-3xl font-bold text-green-700 dark:text-lime-400 px-2"
+                data-testid="final-calculated-points">{calculatedPoints || '待评点'}</output
+              >
+              <p class="text-sm text-gray-600 dark:text-gray-300 px-2 mt-2">
+                {calculatedPoints ? '按三类平均分之和保存。' : '每类至少需要一个数字评分，请重新评点。'}
+              </p>
+            {:else}
+              <SelectInput name="planPoints" bind:value={planPoints} onchange={toggleCustomPointValue} required>
+                <option value="" disabled>
+                  {$LL.points()}
+                </option>
+                {#each points as point}
+                  <option value={point}>{point}</option>
+                {/each}
+                <option value="CUSTOM">Custom</option>
+              </SelectInput>
+              {#if customPointValue}
+                <TextInput
+                  name="customPlanPoints"
+                  bind:value={customPlanPoints}
+                  placeholder="enter a custom point value..."
+                  id="customPlanPoints"
+                  class="mt-2"
+                />
+              {/if}
             {/if}
           </div>
           <div>
-            <SolidButton additionalClasses="w-full h-full" type="submit" testid="voting-save">
+            <SolidButton
+              additionalClasses="w-full h-full"
+              type="submit"
+              testid="voting-save"
+              disabled={categoryEstimation && calculatedPoints === ''}
+            >
               {$LL.save()}
             </SolidButton>
           </div>

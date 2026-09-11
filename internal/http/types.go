@@ -399,9 +399,9 @@ type PokerDataSvc interface {
 	// ActivateStoryVoting activates voting for a story in a poker game
 	ActivateStoryVoting(pokerID string, storyID string) ([]*thunderdome.Story, error)
 	// SetVote sets a user's vote for a story in a poker game
-	SetVote(pokerID string, userID string, storyID string, voteValue string) (stories []*thunderdome.Story, allUsersVoted bool)
+	SetVote(pokerID string, userID string, storyID string, voteValue string, category string) (stories []*thunderdome.Story, allUsersVoted bool, err error)
 	// RetractVote retracts a user's vote for a story in a poker game
-	RetractVote(pokerID string, userID string, storyID string) ([]*thunderdome.Story, error)
+	RetractVote(pokerID string, userID string, storyID string, category string) ([]*thunderdome.Story, error)
 	// EndStoryVoting ends voting for a story in a poker game
 	EndStoryVoting(pokerID string, storyID string) ([]*thunderdome.Story, error)
 	// SkipStory skips a story in a poker game
