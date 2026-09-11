@@ -262,7 +262,7 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     await bp.page.locator('[data-testid="voting-finish"]').click();
 
     await expect(bp.page.getByTestId("category-results")).toBeVisible();
-    await expect(bp.page.getByTestId("category-total")).toHaveText("待评点");
+    await expect(bp.page.getByTestId("category-total")).toHaveText("无有效评分");
     await expect(bp.page.getByTestId("voting-save")).toBeDisabled();
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(lokiPlan.name);
     await expect(bp.page.locator('[data-testid="pointCard"]')).not.toBeVisible();

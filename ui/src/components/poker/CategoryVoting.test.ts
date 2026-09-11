@@ -80,6 +80,22 @@ describe('category estimation', () => {
     );
   });
 
+  it('excludes categories without numeric ballots and still allows saving participating categories', async () => {
+    render(CategoryResults, {
+      estimation: {
+        categories: [
+          { category: 'testing', average: '2.5', count: 2 },
+          { category: 'frontend', average: '', count: 0 },
+          { category: 'backend', average: '', count: 0 },
+        ],
+        total: '2.5',
+      },
+    });
+    await expect.element(page.getByTestId('category-total')).toHaveTextContent('2.5');
+    await expect.element(page.getByTestId('result-frontend')).toHaveTextContent('无有效评分，不参与合计');
+    await expect.element(page.getByTestId('result-testing')).toHaveTextContent('2 个有效评分');
+  });
+
   it('blocks saving an incomplete estimate and allows a zero total', async () => {
     const { rerender } = render(VotingControls, {
       planId: 'story',

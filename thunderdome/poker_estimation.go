@@ -45,7 +45,7 @@ func formatPokerPoints(value float64) string {
 }
 
 // CalculatePokerEstimation averages each discipline separately and rounds only the final sum.
-// A nil result identifies legacy ballots; an empty Total identifies an incomplete estimate.
+// A nil result identifies legacy ballots; an empty Total means nobody submitted a numeric vote.
 func CalculatePokerEstimation(votes []*Vote, users []*PokerUser) *PokerEstimation {
 	grouped := false
 	eligible := make(map[string]bool, len(users))
@@ -61,7 +61,7 @@ func CalculatePokerEstimation(votes []*Vote, users []*PokerUser) *PokerEstimatio
 		return nil
 	}
 	result := &PokerEstimation{Categories: make([]PokerCategoryAverage, 0, 3)}
-	total, complete := 0.0, true
+	total, hasNumericVotes := 0.0, false
 	for _, category := range PokerVoteCategories {
 		group := PokerCategoryAverage{Category: category}
 		sum := 0.0
@@ -74,16 +74,15 @@ func CalculatePokerEstimation(votes []*Vote, users []*PokerUser) *PokerEstimatio
 				group.Count++
 			}
 		}
-		if group.Count == 0 {
-			complete = false
-		} else {
+		if group.Count > 0 {
+			hasNumericVotes = true
 			average := sum / float64(group.Count)
 			group.Average = formatPokerPoints(average)
 			total += average
 		}
 		result.Categories = append(result.Categories, group)
 	}
-	if complete && !math.IsInf(total, 0) {
+	if hasNumericVotes && !math.IsInf(total, 0) {
 		result.Total = formatPokerPoints(total)
 	}
 	return result

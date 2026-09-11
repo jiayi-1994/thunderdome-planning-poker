@@ -44,6 +44,7 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 				d.Logger.Error("get poker stories query error", zap.Error(err),
 					zap.String("PokerID", pokerID), zap.String("UserID", userID))
 			} else {
+				p.VoteDeadline = p.VoteStartTime.Add(thunderdome.PokerVotingDuration)
 				p.ReferenceID = referenceID.String
 				p.Link = link.String
 				p.Description = description.String
@@ -143,9 +144,10 @@ func (d *Service) SetVote(pokerID string, userID string, storyID string, voteVal
 		FROM thunderdome.poker p
 		WHERE s.id = $1 AND s.poker_id = $5 AND p.id = s.poker_id
 		AND s.active AND NOT p.voting_locked AND p.active_story_id = s.id AND p.end_time IS NULL
+		AND s.votestart_time + ($6::double precision * interval '1 second') > clock_timestamp()
 		AND EXISTS (SELECT 1 FROM thunderdome.poker_user u
 			WHERE u.poker_id = p.id AND u.user_id::text = $2 AND NOT u.spectator)
-		RETURNING s.votes`, storyID, userID, voteValue, category, pokerID).Scan(&rawVotes)
+		RETURNING s.votes`, storyID, userID, voteValue, category, pokerID, thunderdome.PokerVotingDuration.Seconds()).Scan(&rawVotes)
 	if err != nil {
 		return nil, false, fmt.Errorf("set poker vote: %w", err)
 	}
@@ -170,8 +172,9 @@ func (d *Service) RetractVote(pokerID string, userID string, storyID string, cat
 		FROM thunderdome.poker p
 		WHERE s.id = $1 AND s.poker_id = $4 AND p.id = s.poker_id
 		AND s.active AND NOT p.voting_locked AND p.active_story_id = s.id AND p.end_time IS NULL
+		AND s.votestart_time + ($5::double precision * interval '1 second') > clock_timestamp()
 		AND EXISTS (SELECT 1 FROM thunderdome.poker_user u
-			WHERE u.poker_id = p.id AND u.user_id::text = $2 AND NOT u.spectator)`, storyID, userID, category, pokerID)
+			WHERE u.poker_id = p.id AND u.user_id::text = $2 AND NOT u.spectator)`, storyID, userID, category, pokerID, thunderdome.PokerVotingDuration.Seconds())
 	if err != nil {
 		return nil, fmt.Errorf("retract poker vote: %w", err)
 	}
@@ -339,7 +342,7 @@ func (d *Service) FinalizeStory(pokerID string, storyID string, points string) (
 	var snapshot any
 	if estimation := thunderdome.CalculatePokerEstimation(votes, users); estimation != nil {
 		if estimation.Total == "" {
-			return nil, fmt.Errorf("each category needs at least one numeric vote")
+			return nil, fmt.Errorf("at least one numeric vote is required")
 		}
 		points = estimation.Total
 		encoded, err := json.Marshal(estimation)

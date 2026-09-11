@@ -29,7 +29,7 @@
 >
   <h3 class="text-xl font-semibold">分项评点</h3>
   <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 mb-5">
-    选择你参与的类别评点，可参与多类。没有工作量请投 0；再次点击已选点数可撤回。
+    选择你参与的类别评点，可参与多类。倒计时结束后，未评分者不计入平均分的分母。再次点击已选点数可撤回。
   </p>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
     {#each voteCategories as category}

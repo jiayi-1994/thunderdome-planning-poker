@@ -26,6 +26,9 @@ type Config struct {
 }
 
 type PokerDataSvc interface {
+	// EndExpiredStoryVoting closes rounds whose two-minute voting window has elapsed.
+	EndExpiredStoryVoting(ctx context.Context) ([]*thunderdome.PokerVotingExpiration, error)
+	GetStories(pokerID string, userID string) []*thunderdome.Story
 	// UpdateGame updates an existing poker game
 	UpdateGame(pokerID string, name string, pointValuesAllowed []string, autoFinishVoting bool, pointAverageRounding string, hideVoterIdentity bool, joinCode string, facilitatorCode string, teamID string) error
 	// GetFacilitatorCode retrieves the facilitator code for a poker game
@@ -160,6 +163,7 @@ func New(
 	)
 
 	go s.hub.Run()
+	go s.watchVotingDeadlines(context.Background())
 
 	return s
 }

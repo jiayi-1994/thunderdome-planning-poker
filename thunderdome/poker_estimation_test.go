@@ -16,7 +16,9 @@ func TestCalculatePokerEstimation(t *testing.T) {
 	}{
 		{"different group sizes", []*Vote{ballot("one", "testing", "2"), ballot("two", "testing", "3"), ballot("one", "frontend", "5"), ballot("one", "backend", "3"), ballot("two", "backend", "5"), ballot("three", "backend", "8")}, "12.83", []string{"2.5", "5", "5.33"}, []int{2, 1, 3}},
 		{"abstentions and spectators excluded", []*Vote{ballot("one", "testing", "0"), ballot("two", "testing", "?"), ballot("three", "testing", ""), ballot("observer", "testing", "100"), ballot("missing", "testing", "100"), ballot("one", "frontend", "1/2"), ballot("two", "frontend", "☕️"), ballot("one", "backend", "2.5")}, "3", []string{"0", "0.5", "2.5"}, []int{1, 1, 1}},
-		{"missing category is incomplete", []*Vote{ballot("one", "testing", "2"), ballot("one", "frontend", "3"), ballot("one", "backend", "?")}, "", []string{"2", "3", ""}, []int{1, 1, 0}},
+		{"missing category does not enter the total", []*Vote{ballot("one", "testing", "2"), ballot("one", "frontend", "3"), ballot("one", "backend", "?")}, "5", []string{"2", "3", ""}, []int{1, 1, 0}},
+		{"nonvoters do not enter the denominator", []*Vote{ballot("one", "testing", "2"), ballot("two", "testing", "3")}, "2.5", []string{"2.5", "", ""}, []int{2, 0, 0}},
+		{"only abstentions has no total", []*Vote{ballot("one", "testing", "?"), ballot("two", "frontend", "☕️")}, "", []string{"", "", ""}, []int{0, 0, 0}},
 		{"zero total", []*Vote{ballot("one", "testing", "0"), ballot("one", "frontend", "0"), ballot("one", "backend", "0")}, "0", []string{"0", "0", "0"}, []int{1, 1, 1}},
 		{"round sum once", []*Vote{ballot("one", "testing", "1"), ballot("two", "testing", "0"), ballot("three", "testing", "0"), ballot("one", "frontend", "1"), ballot("two", "frontend", "0"), ballot("three", "frontend", "0"), ballot("one", "backend", "1"), ballot("two", "backend", "0"), ballot("three", "backend", "0")}, "1", []string{"0.33", "0.33", "0.33"}, []int{3, 3, 3}},
 	}
@@ -54,8 +56,8 @@ func TestNumericPokerVote(t *testing.T) {
 func TestAllPokerUsersVoted(t *testing.T) {
 	users := []*PokerUser{{ID: "one", Active: true}, {ID: "two", Active: true}, {ID: "observer", Active: true, Spectator: true}, {ID: "offline"}}
 	votes := []*Vote{{UserID: "one", Category: "testing", VoteValue: "2"}, {UserID: "two", Category: "frontend", VoteValue: "3"}}
-	if AllPokerUsersVoted(votes, users) {
-		t.Fatal("must wait for the third category even when everyone has voted")
+	if !AllPokerUsersVoted(votes, users) {
+		t.Fatal("unscored categories must not prevent completion after all active participants have voted")
 	}
 	votes = append(votes, &Vote{UserID: "two", Category: "backend", VoteValue: "0"})
 	if !AllPokerUsersVoted(votes, users) {

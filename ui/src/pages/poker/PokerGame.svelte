@@ -6,6 +6,7 @@
   import CategoryVoting from '../../components/poker/CategoryVoting.svelte';
   import CategoryResults from '../../components/poker/CategoryResults.svelte';
   import { emptyCategoryVotes } from '../../components/poker/categoryEstimation';
+  import { expirationMatchesRound } from '../../components/poker/votingDeadline';
   import PokerStories from '../../components/poker/PokerStories.svelte';
   import HollowButton from '../../components/global/HollowButton.svelte';
   import EditPokerGame from '../../components/poker/EditPokerGame.svelte';
@@ -17,7 +18,7 @@
   import VotingControls from '../../components/poker/VotingControls.svelte';
   import InviteUser from '../../components/poker/InviteUser.svelte';
   import VoteTimer from '../../components/poker/VoteTimer.svelte';
-  import type { PokerGame, PokerStory, PokerVoteCategory } from '../../types/poker';
+  import type { PokerGame, PokerStory, PokerVoteCategory, PokerVotingExpiration } from '../../types/poker';
   import { ExternalLink, Pencil, Settings, TimerOff, Trash } from '@lucide/svelte';
   import SubMenu from '../../components/global/SubMenu.svelte';
   import SubMenuItem from '../../components/global/SubMenuItem.svelte';
@@ -90,6 +91,7 @@
   let showDeleteGame: boolean = $state(false);
   let isSpectator: boolean = $state(false);
   let voteStartTime: Date = $state(new Date());
+  let voteDeadlineReached = $state(false);
   let showEndGameModal: boolean = $state(false);
   let gameOver: boolean = $derived(typeof pokerGame.endTime !== 'undefined' && pokerGame.endTime !== null);
 
@@ -115,6 +117,7 @@
 
         currentStory = { ...defaultStory };
         categoryVotes = emptyCategoryVotes();
+        voteDeadlineReached = false;
         if (pokerGame.activePlanId) {
           const activePlan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
           if (activePlan) {
@@ -177,6 +180,7 @@
         pokerGame.plans = updatedPlans;
         pokerGame.activePlanId = activePlan.id;
         pokerGame.votingLocked = false;
+        voteDeadlineReached = false;
         categoryVotes = emptyCategoryVotes();
         break;
       case 'plan_skipped':
@@ -220,6 +224,16 @@
         pokerGame.plans = JSON.parse(parsedEvent.value);
         pokerGame.votingLocked = true;
         break;
+      case 'voting_expired': {
+        const expiration: PokerVotingExpiration = JSON.parse(parsedEvent.value);
+        const activePlan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
+        if (expirationMatchesRound(activePlan, expiration)) {
+          pokerGame.plans = expiration.plans;
+          pokerGame.votingLocked = true;
+          voteDeadlineReached = true;
+        }
+        break;
+      }
       case 'plan_finalized':
         pokerGame.plans = JSON.parse(parsedEvent.value);
         pokerGame.activePlanId = '';
@@ -533,7 +547,15 @@
     </div>
 
     <div class="w-full md:w-1/3 text-center md:text-right">
-      <VoteTimer currentStoryId={currentStory.id} votingLocked={pokerGame.votingLocked} {voteStartTime} />
+      <VoteTimer
+        currentStoryId={currentStory.id}
+        votingLocked={pokerGame.votingLocked || gameOver}
+        {voteStartTime}
+        voteDeadline={currentStory.voteDeadline}
+        onExpire={() => {
+          voteDeadlineReached = true;
+        }}
+      />
     </div>
   </div>
 
@@ -565,7 +587,12 @@
               selections={categoryVotes}
               votes={activeStory?.votes}
               users={pokerGame.users}
-              isLocked={!activeStory || pokerGame.votingLocked || isSpectator || socketError || socketReconnecting}
+              isLocked={!activeStory ||
+                pokerGame.votingLocked ||
+                voteDeadlineReached ||
+                isSpectator ||
+                socketError ||
+                socketReconnecting}
               onVote={handleVote}
               onRetract={handleUnvote}
             />

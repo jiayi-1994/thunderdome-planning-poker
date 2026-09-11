@@ -402,6 +402,8 @@ type PokerDataSvc interface {
 	SetVote(pokerID string, userID string, storyID string, voteValue string, category string) (stories []*thunderdome.Story, allUsersVoted bool, err error)
 	// RetractVote retracts a user's vote for a story in a poker game
 	RetractVote(pokerID string, userID string, storyID string, category string) ([]*thunderdome.Story, error)
+	EndExpiredStoryVoting(ctx context.Context) ([]*thunderdome.PokerVotingExpiration, error)
+	GetStories(pokerID string, userID string) []*thunderdome.Story
 	// EndStoryVoting ends voting for a story in a poker game
 	EndStoryVoting(pokerID string, storyID string) ([]*thunderdome.Story, error)
 	// SkipStory skips a story in a poker game

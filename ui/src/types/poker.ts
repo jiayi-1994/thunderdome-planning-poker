@@ -33,6 +33,7 @@ export type PokerStory = {
   skipped: boolean;
   voteEndTime: Date;
   voteStartTime: Date;
+  voteDeadline?: Date;
   votes: Array<PokerStoryVote>;
   estimation?: PokerEstimation;
   position: number;
@@ -45,6 +46,12 @@ export type PokerStoryVote = {
 };
 
 export type PokerVoteCategory = 'testing' | 'frontend' | 'backend';
+
+export type PokerVotingExpiration = {
+  planId: string;
+  voteStartTime: Date;
+  plans: PokerStory[];
+};
 
 export type PokerEstimation = {
   categories: Array<{ category: PokerVoteCategory; average: string; count: number }>;

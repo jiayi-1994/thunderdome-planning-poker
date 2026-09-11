@@ -4,6 +4,16 @@ import (
 	"time"
 )
 
+const PokerVotingDuration = 2 * time.Minute
+
+// PokerVotingExpiration identifies a specific voting round, so delayed events cannot end a newer round.
+type PokerVotingExpiration struct {
+	PokerID       string    `json:"-"`
+	StoryID       string    `json:"planId"`
+	VoteStartTime time.Time `json:"voteStartTime"`
+	Stories       []*Story  `json:"plans"`
+}
+
 // PokerUser aka user
 type PokerUser struct {
 	ID           string `json:"id"`
@@ -65,6 +75,7 @@ type Story struct {
 	Active             bool             `json:"active"`
 	Skipped            bool             `json:"skipped"`
 	VoteStartTime      time.Time        `json:"voteStartTime"`
+	VoteDeadline       time.Time        `json:"voteDeadline"`
 	VoteEndTime        time.Time        `json:"voteEndTime"`
 	Position           int32            `json:"position"`
 }

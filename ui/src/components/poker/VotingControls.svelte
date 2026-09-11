@@ -94,10 +94,10 @@
             {#if categoryEstimation}
               <output
                 class="block text-3xl font-bold text-green-700 dark:text-lime-400 px-2"
-                data-testid="final-calculated-points">{calculatedPoints || '待评点'}</output
+                data-testid="final-calculated-points">{calculatedPoints || '无有效评分'}</output
               >
               <p class="text-sm text-gray-600 dark:text-gray-300 px-2 mt-2">
-                {calculatedPoints ? '按三类平均分之和保存。' : '每类至少需要一个数字评分，请重新评点。'}
+                {calculatedPoints ? '按参与评点类别的平均分之和保存。' : '本轮没有数字评分，请重新评点。'}
               </p>
             {:else}
               <SelectInput name="planPoints" bind:value={planPoints} onchange={toggleCustomPointValue} required>

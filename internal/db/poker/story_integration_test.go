@@ -1,12 +1,15 @@
 package poker
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/StevenWeathers/thunderdome-planning-poker/thunderdome"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
@@ -49,6 +52,11 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 	exec(strings.Split(string(migration), "-- +goose Down")[0])
+	deadlineMigration, err := os.ReadFile("../migrations/20260911100000_index_active_poker_voting.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec(strings.Split(string(deadlineMigration), "-- +goose Down")[0])
 	procedures, err := os.ReadFile("../migrations/20230823233842_create_funcs_procs_triggers.sql")
 	if err != nil {
 		t.Fatal(err)
@@ -87,8 +95,8 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	vote(one, "testing", "2")
 	vote(two, "testing", "3")
 	vote(one, "frontend", "5")
-	if vote(three, "frontend", "?") {
-		t.Fatal("auto-finish before backend has voted")
+	if !vote(three, "frontend", "?") {
+		t.Fatal("all active participants have submitted a ballot")
 	}
 	if _, err := svc.RetractVote(game, one, story, "frontend"); err != nil {
 		t.Fatal(err)
@@ -99,6 +107,9 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	}
 	if restored.Estimation != nil {
 		t.Fatal("live average leaked before reveal")
+	}
+	if restored.VoteDeadline.Sub(restored.VoteStartTime) != thunderdome.PokerVotingDuration {
+		t.Fatal("voting must default to a two-minute deadline")
 	}
 	for _, ballot := range restored.Votes {
 		if ballot.UserID != one && ballot.VoteValue != "" {
@@ -172,9 +183,60 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	if _, err := svc.EndStoryVoting(game, story); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.FinalizeStory(game, story, "0"); err == nil {
-		t.Fatal("missing categories were treated as zero")
+	if plans, err := svc.FinalizeStory(game, story, "999"); err != nil || plans[0].Points != "0" {
+		t.Fatal("a numeric zero is valid while unscored categories are excluded", err)
 	}
+
+	t.Run("deadline expires without waiting for nonvoters", func(t *testing.T) {
+		if _, err := svc.ActivateStoryVoting(game, story); err != nil {
+			t.Fatal(err)
+		}
+		vote(one, "testing", "5")
+		// Simulate a round that started before this service instance was created.
+		exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '121 seconds' WHERE id = $1`, story)
+		if _, _, err := svc.SetVote(game, three, story, "100", "testing"); err == nil {
+			t.Fatal("accepted a late ballot before the expiration worker ran")
+		}
+		if _, err := svc.RetractVote(game, one, story, "testing"); err == nil {
+			t.Fatal("accepted a late retraction")
+		}
+		freshService := &Service{DB: db, Logger: svc.Logger}
+		expired, err := freshService.EndExpiredStoryVoting(context.Background())
+		if err != nil || len(expired) != 1 || expired[0].StoryID != story {
+			t.Fatalf("unexpected expiration: %+v, %v", expired, err)
+		}
+		plans := freshService.GetStories(game, one)
+		if plans[0].Active || plans[0].Estimation.Total != "5" || plans[0].Estimation.Categories[0].Count != 1 {
+			t.Fatalf("nonvoters changed the result: %+v", plans[0])
+		}
+		if plans[0].VoteEndTime.Sub(plans[0].VoteStartTime) != 2*time.Minute {
+			t.Fatal("expiration end time must match the deadline")
+		}
+		var locked bool
+		if err := db.QueryRow(`SELECT voting_locked FROM thunderdome.poker WHERE id = $1`, game).Scan(&locked); err != nil || !locked {
+			t.Fatal("game was not locked atomically", err)
+		}
+		if repeated, err := freshService.EndExpiredStoryVoting(context.Background()); err != nil || len(repeated) != 0 {
+			t.Fatal("expiration must be idempotent", err)
+		}
+		if finalized, err := freshService.FinalizeStory(game, story, "999"); err != nil || finalized[0].Points != "5" {
+			t.Fatal("could not save partial participation result", err)
+		}
+		if _, err := svc.ActivateStoryVoting(game, story); err != nil {
+			t.Fatal(err)
+		}
+		if expired, err := svc.EndExpiredStoryVoting(context.Background()); err != nil || len(expired) != 0 {
+			t.Fatal("old deadline stopped restarted round", err)
+		}
+		exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '121 seconds' WHERE id = $1`, story)
+		if expired, err := svc.EndExpiredStoryVoting(context.Background()); err != nil || len(expired) != 1 {
+			t.Fatal("empty round must also end on time", err)
+		}
+		if _, err := svc.FinalizeStory(game, story, "0"); err == nil {
+			t.Fatal("empty round must not invent a zero estimate")
+		}
+	})
 	// Verify the migration is reversible after actual data has been saved.
+	exec(strings.Split(string(deadlineMigration), "-- +goose Down")[1])
 	exec(strings.Split(string(migration), "-- +goose Down")[1])
 }
