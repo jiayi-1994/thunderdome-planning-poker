@@ -1,0 +1,8 @@
+# Replace with a hostname or IPv4 address that the browser can reach.
+app:
+  domain: poker.example.com
+  https: false
+service:
+  type: NodePort
+  nodePort: 30080
+# Visit http://poker.example.com:30080 (DNS must resolve to a cluster node).

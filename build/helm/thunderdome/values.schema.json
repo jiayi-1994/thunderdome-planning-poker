@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "replicaCount": {"type": "integer", "enum": [1]},
+    "global": {
+      "type": "object",
+      "properties": {
+        "imageProxy": {"type": "string", "pattern": "^$|^[a-zA-Z0-9][a-zA-Z0-9.:/_-]*$"},
+        "imagePullSecrets": {"type": "array", "items": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string", "minLength": 1}}}}
+      }
+    },
+    "image": {"$ref": "#/definitions/image"},
+    "app": {
+      "type": "object",
+      "properties": {
+        "domain": {"type": "string", "minLength": 1, "maxLength": 253, "pattern": "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$"},
+        "https": {"type": "boolean"},
+        "pathPrefix": {"type": "string", "pattern": "^$|^/[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)*$"},
+        "smtpEnabled": {"type": "boolean"},
+        "extraEnv": {"type": "array"},
+        "extraEnvFrom": {"type": "array"}
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "properties": {
+        "existingSecret": {"type": "string"},
+        "databasePassword": {"type": "string"},
+        "cookieHashKey": {"type": "string", "pattern": "^$|^[\\s\\S]{32,}$"},
+        "aesHashKey": {"type": "string", "pattern": "^$|^[\\s\\S]{32,}$"}
+      }
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "type": {"enum": ["ClusterIP", "NodePort", "LoadBalancer"]},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "nodePort": {"type": "integer", "anyOf": [{"enum": [0]}, {"minimum": 30000, "maximum": 32767}]}
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "annotations": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tls": {"type": "object", "properties": {"enabled": {"type": "boolean"}, "secretName": {"type": "string"}}}
+      }
+    },
+    "postgresql": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "image": {"$ref": "#/definitions/image"},
+        "database": {"type": "string", "minLength": 1},
+        "username": {"type": "string", "minLength": 1},
+        "persistence": {
+          "type": "object",
+          "properties": {
+            "existingClaim": {"type": "string"},
+            "storageClass": {"type": "string"},
+            "size": {"type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi|Ti)$"},
+            "accessModes": {"type": "array", "minItems": 1, "items": {"enum": ["ReadWriteOnce", "ReadWriteOncePod", "ReadWriteMany"]}}
+          }
+        }
+      }
+    },
+    "externalDatabase": {
+      "type": "object",
+      "properties": {
+        "host": {"type": "string"},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "database": {"type": "string", "minLength": 1},
+        "username": {"type": "string", "minLength": 1},
+        "sslmode": {"enum": ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]}
+      }
+    }
+  },
+  "definitions": {
+    "image": {
+      "type": "object",
+      "required": ["repository", "tag", "pullPolicy"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.:-]*/[a-z0-9][a-z0-9._/-]*$"},
+        "tag": {"type": "string", "minLength": 1},
+        "digest": {"type": "string", "pattern": "^$|^sha256:[a-f0-9]{64}$"},
+        "pullPolicy": {"enum": ["Always", "IfNotPresent", "Never"]},
+        "proxy": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{{- if and .Values.postgresql.enabled (not .Values.postgresql.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "thunderdome.claimName" . }}
+  labels:
+    {{- include "thunderdome.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    {{- toYaml .Values.postgresql.persistence.accessModes | nindent 4 }}
+  {{- if eq .Values.postgresql.persistence.storageClass "-" }}
+  storageClassName: ""
+  {{- else if .Values.postgresql.persistence.storageClass }}
+  storageClassName: {{ .Values.postgresql.persistence.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.postgresql.persistence.size | quote }}
+{{- end }}

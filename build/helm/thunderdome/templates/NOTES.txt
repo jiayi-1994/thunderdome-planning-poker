@@ -1,0 +1,15 @@
+Thunderdome installed in namespace {{ .Release.Namespace }}.
+
+{{- if .Values.ingress.enabled }}
+Open {{ ternary "https" "http" (or .Values.app.https .Values.ingress.tls.enabled) }}://{{ .Values.app.domain }}{{ .Values.app.pathPrefix }}/
+DNS, an Ingress controller, and the configured TLS Secret must already exist.
+{{- else }}
+For a local check with app.domain=localhost and app.https=false:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "thunderdome.fullname" . }} 8080:{{ .Values.service.port }}
+  Open http://localhost:8080{{ .Values.app.pathPrefix }}/
+{{- end }}
+
+The app uses one replica and Recreate updates. Updates briefly interrupt sessions.
+Back up PostgreSQL AND Secret {{ include "thunderdome.secretName" . }} before upgrading.
+Chart-managed PVC and Secret are retained on uninstall. Do not delete the namespace
+unless you intend to delete its retained data and credentials.

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "thunderdome.fullname" . }}
+  labels:
+    {{- include "thunderdome.labels" . | nindent 4 }}
+data:
+  APP_DOMAIN: {{ .Values.app.domain | quote }}
+  PORT: "8080"
+  PATH_PREFIX: {{ .Values.app.pathPrefix | quote }}
+  HTTP_SECURE_PROTOCOL: {{ or .Values.app.https (and .Values.ingress.enabled .Values.ingress.tls.enabled) | quote }}
+  COOKIE_SECURE: {{ or .Values.app.https (and .Values.ingress.enabled .Values.ingress.tls.enabled) | quote }}
+  ADMIN_EMAIL: {{ .Values.app.adminEmail | quote }}
+  SMTP_ENABLED: {{ .Values.app.smtpEnabled | quote }}
+  DB_HOST: {{ include "thunderdome.databaseHost" . | quote }}
+  DB_PORT: {{ ternary 5432 .Values.externalDatabase.port .Values.postgresql.enabled | quote }}
+  DB_NAME: {{ ternary .Values.postgresql.database .Values.externalDatabase.database .Values.postgresql.enabled | quote }}
+  DB_USER: {{ ternary .Values.postgresql.username .Values.externalDatabase.username .Values.postgresql.enabled | quote }}
+  DB_SSLMODE: {{ ternary "disable" .Values.externalDatabase.sslmode .Values.postgresql.enabled | quote }}

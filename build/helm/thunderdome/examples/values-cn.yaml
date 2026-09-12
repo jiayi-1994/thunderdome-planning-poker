@@ -1,0 +1,11 @@
+# Domestic mirrors. Apply with: -f values-cn.yaml
+# Manifest access verified on 2026-09-12; availability depends on your network.
+image:
+  repository: ghcr.nju.edu.cn/jiayi-1994/thunderdome-planning-poker
+  tag: latest
+  proxy: ""
+postgresql:
+  image:
+    repository: docker.io/library/postgres
+    tag: 17-bookworm
+    proxy: m.daocloud.io

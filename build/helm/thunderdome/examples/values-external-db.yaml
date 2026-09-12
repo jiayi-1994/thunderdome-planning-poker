@@ -1,0 +1,11 @@
+# The database, schema permissions, and Secret must exist in advance.
+postgresql:
+  enabled: false
+externalDatabase:
+  host: postgres.example.com
+  port: 5432
+  database: thunderdome
+  username: thunderdome
+  sslmode: require
+secrets:
+  existingSecret: thunderdome-credentials

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: thunderdome
+description: Thunderdome Planning Poker with optional persistent PostgreSQL
+type: application
+version: 0.1.0
+appVersion: latest
+kubeVersion: '>=1.24.0-0'
+home: https://github.com/jiayi-1994/thunderdome-planning-poker
+sources:
+  - https://github.com/jiayi-1994/thunderdome-planning-poker

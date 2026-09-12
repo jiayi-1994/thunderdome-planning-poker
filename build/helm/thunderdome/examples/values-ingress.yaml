@@ -1,0 +1,17 @@
+app:
+  domain: poker.example.com
+  https: true
+ingress:
+  enabled: true
+  className: nginx
+  # These annotations apply to ingress-nginx. Adapt to your controller.
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  tls:
+    enabled: true
+    secretName: poker-tls
+# Set your cluster's storage class if it has no default:
+# postgresql:
+#   persistence:
+#     storageClass: YOUR_STORAGE_CLASS

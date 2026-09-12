@@ -1,0 +1,14 @@
+# Synchronize both images to these repositories before installing.
+global:
+  imageProxy: ""
+  imagePullSecrets:
+    - name: harbor-pull
+image:
+  repository: harbor.example.com/apps/thunderdome-planning-poker
+  tag: latest
+  proxy: ""
+postgresql:
+  image:
+    repository: harbor.example.com/apps/postgres
+    tag: 17-bookworm
+    proxy: ""

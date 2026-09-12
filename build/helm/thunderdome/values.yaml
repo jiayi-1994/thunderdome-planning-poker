@@ -1,0 +1,101 @@
+# Copy only the values you need into your own values file.
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  # Prefix-preserving proxy: <proxy>/<original registry>/<original path>.
+  # Leave empty for direct pulls. For Harbor, override image.repository instead.
+  imageProxy: ""
+  imagePullSecrets: []
+  # - name: harbor-pull
+
+image:
+  repository: ghcr.io/jiayi-1994/thunderdome-planning-poker
+  tag: latest
+  digest: ""
+  pullPolicy: Always
+  # null inherits global.imageProxy; "" explicitly disables the proxy.
+  proxy: null
+
+# The WebSocket hubs hold state in memory; only one app replica is supported.
+replicaCount: 1
+app:
+  # Hostname only, without protocol, port, or path.
+  domain: localhost
+  https: false
+  # Empty or /prefix (no trailing slash).
+  pathPrefix: ""
+  adminEmail: ""
+  smtpEnabled: false
+  extraEnv: []
+  # - name: SMTP_HOST
+  #   value: smtp.example.com
+  extraEnvFrom: []
+  # - secretRef:
+  #     name: thunderdome-smtp
+
+secrets:
+  # Existing Secret must have DB_PASS, COOKIE_HASHKEY, CONFIG_AES_HASHKEY.
+  existingSecret: ""
+  # Empty values are securely generated during install and reused on upgrade.
+  # With external PostgreSQL, databasePassword or existingSecret is required.
+  databasePassword: ""
+  cookieHashKey: ""
+  aesHashKey: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+  # 0 lets Kubernetes allocate a NodePort. Used only with type: NodePort.
+  nodePort: 0
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  tls:
+    # Also enables secure cookies and wss:// links in the application.
+    enabled: false
+    secretName: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 512Mi
+nodeSelector: {}
+tolerations: []
+
+postgresql:
+  enabled: true
+  image:
+    repository: docker.io/library/postgres
+    tag: 17-bookworm
+    digest: ""
+    pullPolicy: IfNotPresent
+    proxy: null
+  database: thunderdome
+  username: thunderdome
+  persistence:
+    # Existing claim is not managed by this chart. Never reuse a different PG major's data directory.
+    existingClaim: ""
+    # Empty uses the default StorageClass. "-" requests no StorageClass (static PV).
+    storageClass: ""
+    size: 10Gi
+    accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  nodeSelector: {}
+  tolerations: []
+
+externalDatabase:
+  host: ""
+  port: 5432
+  database: thunderdome
+  username: thunderdome
+  sslmode: require

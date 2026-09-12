@@ -1,0 +1,92 @@
+name: Verify Helm package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - build/helm/thunderdome/**
+      - build/helm/tests/**
+      - .github/workflows/helm.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Lint, test, and package
+        run: |
+          helm version --short
+          python -m pip install PyYAML==6.0.3
+          helm lint build/helm/thunderdome --strict
+          python -m unittest discover -s build/helm/tests -v
+          mkdir -p dist/helm
+          helm package build/helm/thunderdome --destination dist/helm
+      - name: Create disposable Kubernetes cluster
+        run: |
+          curl -fsSL https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64 -o /tmp/kind
+          curl -fsSL https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64.sha256sum -o /tmp/kind.sha256sum
+          (cd /tmp && sed 's/kind-linux-amd64/kind/' kind.sha256sum | sha256sum -c -)
+          chmod +x /tmp/kind
+          /tmp/kind create cluster --name helm-test --wait 90s
+      - name: Install packaged chart using domestic mirrors
+        run: |
+          helm upgrade --install thunderdome dist/helm/thunderdome-0.1.0.tgz \
+            -n thunderdome --create-namespace \
+            -f build/helm/thunderdome/examples/values-cn.yaml \
+            -f build/helm/thunderdome/examples/values-pinned.yaml \
+            --wait --timeout 10m
+          kubectl -n thunderdome get pods,pvc
+      - name: Check migrations, HTTP, and upgrade persistence
+        shell: bash
+        run: |
+          set -euo pipefail
+          sql() { kubectl -n thunderdome exec thunderdome-postgresql-0 -- psql -v ON_ERROR_STOP=1 -U thunderdome -d thunderdome -Atc "$1"; }
+          test "$(sql "SELECT to_regclass('thunderdome.poker_jira_settings') IS NOT NULL")" = t
+          sql 'CREATE TABLE public.helm_smoke (value text); INSERT INTO public.helm_smoke VALUES ('"'retained'"');'
+          secret_before=$(kubectl -n thunderdome get secret thunderdome-secrets -o jsonpath='{.data}' | sha256sum)
+          kubectl -n thunderdome port-forward svc/thunderdome 8080:8080 >/tmp/port-forward.log 2>&1 &
+          forward_pid=$!
+          trap 'kill "$forward_pid" 2>/dev/null || true' EXIT
+          curl --fail --retry 15 --retry-connrefused --retry-delay 2 http://localhost:8080/healthz
+          curl --fail http://localhost:8080/ -o /tmp/index.html
+          grep -q '<html' /tmp/index.html
+          kill "$forward_pid"
+          helm upgrade thunderdome dist/helm/thunderdome-0.1.0.tgz -n thunderdome \
+            -f build/helm/thunderdome/examples/values-cn.yaml \
+            -f build/helm/thunderdome/examples/values-pinned.yaml \
+            --set app.pathPrefix=/poker --wait --timeout 5m
+          secret_after=$(kubectl -n thunderdome get secret thunderdome-secrets -o jsonpath='{.data}' | sha256sum)
+          test "$secret_before" = "$secret_after"
+          kubectl -n thunderdome rollout restart statefulset/thunderdome-postgresql
+          kubectl -n thunderdome rollout status statefulset/thunderdome-postgresql --timeout=180s
+          test "$(sql 'SELECT value FROM public.helm_smoke')" = retained
+          kubectl -n thunderdome port-forward svc/thunderdome 8080:8080 >/tmp/port-forward.log 2>&1 &
+          forward_pid=$!
+          curl --fail --retry 15 --retry-connrefused --retry-delay 2 http://localhost:8080/poker/healthz
+          curl --fail http://localhost:8080/poker/ -o /tmp/index.html
+          grep -q '<html' /tmp/index.html
+          kill "$forward_pid"
+          helm uninstall thunderdome -n thunderdome
+          kubectl -n thunderdome get pvc/thunderdome-postgresql secret/thunderdome-secrets -o name
+          helm install thunderdome dist/helm/thunderdome-0.1.0.tgz -n thunderdome \
+            -f build/helm/thunderdome/examples/values-cn.yaml \
+            -f build/helm/thunderdome/examples/values-pinned.yaml \
+            --wait --timeout 5m
+          test "$secret_before" = "$(kubectl -n thunderdome get secret thunderdome-secrets -o jsonpath='{.data}' | sha256sum)"
+          test "$(sql 'SELECT value FROM public.helm_smoke')" = retained
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          kubectl -n thunderdome get pods,pvc,events || true
+          kubectl -n thunderdome describe pods || true
+          kubectl -n thunderdome logs deployment/thunderdome --tail=100 || true
+          kubectl -n thunderdome logs statefulset/thunderdome-postgresql --tail=100 || true
+      - name: Delete disposable cluster
+        if: always()
+        run: /tmp/kind delete cluster --name helm-test
