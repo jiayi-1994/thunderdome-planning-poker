@@ -32,11 +32,11 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 	}
 	var written []float64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/rest/api/3/issue/TEST-1" || r.Method != "PUT" {
+		if r.URL.Path != "/rest/api/2/issue/TEST-1" || r.Method != "PUT" {
 			t.Errorf("unexpected Jira target %s %s", r.Method, r.URL.Path)
 		}
 		user, token, ok := r.BasicAuth()
-		if !ok || user != "jira@example.com" || token != "test-token" {
+		if !ok || user != "jira.user" || token != "test-token" {
 			t.Error("saved credentials were not decrypted for Jira")
 		}
 		var payload struct {
@@ -50,9 +50,25 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 	}))
 	defer server.Close()
 	jira := &jiradb.Service{DB: database, Logger: poker.Logger, AESHashKey: key}
-	instance, err := jira.CreateInstance(ctx, one, server.URL, "jira@example.com", "test-token", false)
+	instance, err := jira.CreateInstance(ctx, one, server.URL, "jira.user", "test-token", true, "basic")
 	if err != nil {
 		t.Fatal(err)
+	}
+	stored, err := jira.GetInstanceByID(ctx, instance.ID)
+	if err != nil || stored.AuthMethod != "basic" || !stored.JiraDataCenter || stored.AccessToken != "test-token" {
+		t.Fatalf("Server credentials did not survive storage: %v", err)
+	}
+	var encrypted string
+	if err := database.QueryRow(`SELECT access_token FROM thunderdome.jira_instance WHERE id = $1`, instance.ID).Scan(&encrypted); err != nil || encrypted == "test-token" {
+		t.Fatal("Jira password was not encrypted at rest")
+	}
+	updated, err := jira.UpdateInstance(ctx, instance.ID, server.URL, "jira.user", "test-token", "")
+	if err != nil || updated.AuthMethod != "basic" || !updated.JiraDataCenter {
+		t.Fatalf("update omitted authentication and lost the saved method: %v", err)
+	}
+	listed, err := jira.FindInstancesByUserID(ctx, one)
+	if err != nil || len(listed) != 1 || listed[0].AuthMethod != "basic" {
+		t.Fatalf("list lost authentication method: %v", err)
 	}
 	settings := thunderdome.PokerJiraSettings{Enabled: true, InstanceID: instance.ID, FieldID: "customfield_10016", FieldName: "Story Points", Host: server.URL}
 	if err := jira.SavePokerJiraSettings(ctx, game, two, settings); err == nil {

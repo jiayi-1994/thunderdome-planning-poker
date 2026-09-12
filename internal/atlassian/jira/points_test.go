@@ -13,8 +13,12 @@ import (
 )
 
 func TestWritePointsCloudAndDataCenter(t *testing.T) {
-	for _, dataCenter := range []bool{false, true} {
-		t.Run(fmt.Sprint("dataCenter=", dataCenter), func(t *testing.T) {
+	for _, mode := range []struct {
+		dataCenter bool
+		authMethod string
+	}{{false, ""}, {false, "basic"}, {true, ""}, {true, "pat"}, {true, "basic"}} {
+		dataCenter := mode.dataCenter
+		t.Run(fmt.Sprintf("dataCenter=%v/auth=%s", dataCenter, mode.authMethod), func(t *testing.T) {
 			for _, points := range []string{"12.83", "0"} {
 				calls := 0
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +26,8 @@ func TestWritePointsCloudAndDataCenter(t *testing.T) {
 					version := "3"
 					if dataCenter {
 						version = "2"
+					}
+					if dataCenter && mode.authMethod != "basic" {
 						if r.Header.Get("Authorization") != "Bearer test-token" {
 							t.Error("wrong Data Center auth")
 						}
@@ -44,7 +50,7 @@ func TestWritePointsCloudAndDataCenter(t *testing.T) {
 					}
 					w.WriteHeader(http.StatusNoContent)
 				}))
-				instance := thunderdome.JiraInstance{Host: server.URL + "/jira/", ClientMail: "test@example.com", AccessToken: "test-token", JiraDataCenter: dataCenter}
+				instance := thunderdome.JiraInstance{Host: server.URL + "/jira/", ClientMail: "test@example.com", AccessToken: "test-token", JiraDataCenter: dataCenter, AuthMethod: mode.authMethod}
 				write := thunderdome.PokerJiraWrite{Host: instance.Host, Link: server.URL + "/jira/browse/TEST-123", IssueKey: "TEST-123", FieldID: "customfield_10016", Points: points}
 				err := WritePoints(context.Background(), instance, write)
 				server.Close()

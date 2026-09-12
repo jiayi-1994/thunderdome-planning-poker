@@ -40,7 +40,7 @@ func pointsRequest(ctx context.Context, instance thunderdome.JiraInstance, metho
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	if instance.JiraDataCenter {
+	if instance.JiraDataCenter && instance.AuthMethod != "basic" {
 		req.Header.Set("Authorization", "Bearer "+instance.AccessToken)
 	} else {
 		req.SetBasicAuth(instance.ClientMail, instance.AccessToken)
@@ -60,7 +60,7 @@ func pointsRequest(ctx context.Context, instance thunderdome.JiraInstance, metho
 		case http.StatusBadRequest:
 			return nil, fmt.Errorf("Jira 拒绝更新，请检查点数字段及其编辑权限（400）")
 		case http.StatusUnauthorized:
-			return nil, fmt.Errorf("Jira 账号认证失败，请更新 API Token（401）")
+			return nil, fmt.Errorf("Jira 账号认证失败，请检查认证方式、用户名及密码或 Token（401）")
 		case http.StatusForbidden:
 			return nil, fmt.Errorf("Jira 账号没有访问或编辑权限（403）")
 		case http.StatusNotFound:

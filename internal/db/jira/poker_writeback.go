@@ -114,7 +114,7 @@ func (s *Service) ProcessPokerJiraSync(ctx context.Context, write func(context.C
 	var votesJSON, participantsJSON []byte
 	err = tx.QueryRowContext(ctx, `SELECT j.story_id, j.poker_id, j.vote_start_time, j.issue_key, j.issue_link,
 		j.host, j.field_id, j.points, j.votes, j.participants, j.attempts,
-		i.id, i.user_id, i.host, i.client_mail, i.access_token, i.jira_data_center
+		i.id, i.user_id, i.host, i.client_mail, i.access_token, i.jira_data_center, i.auth_method
 		FROM thunderdome.poker_jira_sync j
 		JOIN thunderdome.poker_story s ON s.id = j.story_id AND s.votestart_time = j.vote_start_time AND NOT s.active AND NOT s.skipped
 		JOIN thunderdome.poker_jira_settings c ON c.poker_id = j.poker_id AND c.enabled
@@ -124,7 +124,7 @@ func (s *Service) ProcessPokerJiraSync(ctx context.Context, write func(context.C
 		ORDER BY j.next_attempt_at, j.story_id LIMIT 1 FOR UPDATE OF s SKIP LOCKED`).Scan(
 		&event.StoryID, &event.PokerID, &event.VoteStartTime, &request.IssueKey, &request.Link,
 		&request.Host, &request.FieldID, &request.Points, &votesJSON, &participantsJSON, &event.Sync.Attempts,
-		&instance.ID, &instance.UserID, &instance.Host, &instance.ClientMail, &instance.AccessToken, &instance.JiraDataCenter)
+		&instance.ID, &instance.UserID, &instance.Host, &instance.ClientMail, &instance.AccessToken, &instance.JiraDataCenter, &instance.AuthMethod)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

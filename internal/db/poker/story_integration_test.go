@@ -57,7 +57,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 	exec(strings.Split(string(deadlineMigration), "-- +goose Down")[0])
-	for _, name := range []string{"20230930180117_add_jira_tables.sql", "20250219144939_add_jiradatacenter.sql", "20260911120000_add_poker_jira_writeback.sql"} {
+	for _, name := range []string{"20230930180117_add_jira_tables.sql", "20250219144939_add_jiradatacenter.sql", "20260911120000_add_poker_jira_writeback.sql", "20260912100000_add_jira_auth_method.sql"} {
 		migration, err := os.ReadFile("../migrations/" + name)
 		if err != nil {
 			t.Fatal(err)

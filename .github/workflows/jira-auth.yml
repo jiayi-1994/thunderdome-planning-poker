@@ -1,0 +1,63 @@
+name: Verify Jira authentication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/jira-auth.yml'
+      - 'internal/atlassian/**'
+      - 'internal/db/jira/**'
+      - 'internal/db/migrations/**'
+      - 'internal/db/poker/*test.go'
+      - 'internal/http/jira*'
+      - 'internal/http/types.go'
+      - 'thunderdome/jira.go'
+      - 'ui/src/components/jira/**'
+      - 'go.mod'
+      - 'go.sum'
+      - 'ui/package*.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_DB: thunderdome_test
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+      - name: Test Go packages
+        run: |
+          mkdir -p ui/dist
+          touch ui/dist/index.html
+          go test ./internal/... ./thunderdome
+      - name: Test persisted Server credentials and point writeback
+        env:
+          POKER_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/thunderdome_test?sslmode=disable
+        run: go test ./internal/db/poker -run TestCategoryVotingDatabase -count=1 -v
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Test and build Jira configuration UI
+        working-directory: ui
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx vitest run src/components/jira/CreateJiraInstance.test.ts
+          npm run build

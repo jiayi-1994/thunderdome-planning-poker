@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -52,9 +54,36 @@ func (s *Service) handleGetUserJiraInstances() http.HandlerFunc {
 
 type jiraInstanceRequestBody struct {
 	Host           string `json:"host" validate:"required,http_url"`
-	ClientMail     string `json:"client_mail" validate:"required,email"`
+	ClientMail     string `json:"client_mail"`
 	AccessToken    string `json:"access_token" validate:"required"`
 	JiraDataCenter bool   `json:"jira_data_center"` // Checkbox for enabling Jira Data Center
+	AuthMethod     string `json:"auth_method"`
+}
+
+func (req *jiraInstanceRequestBody) validateInput() error {
+	req.Host = strings.TrimSpace(req.Host)
+	req.ClientMail = strings.TrimSpace(req.ClientMail)
+	host, err := url.Parse(req.Host)
+	if err != nil || host.Host == "" || (host.Scheme != "http" && host.Scheme != "https") || host.User != nil || host.RawQuery != "" || host.Fragment != "" {
+		return Errorf(EINVALID, "Jira host must be an http:// or https:// base URL")
+	}
+	if req.AuthMethod != "" && req.AuthMethod != "basic" && req.AuthMethod != "pat" {
+		return Errorf(EINVALID, "Choose a supported Jira authentication method")
+	}
+	if !req.JiraDataCenter {
+		if req.AuthMethod == "pat" {
+			return Errorf(EINVALID, "Jira Cloud requires email and an API token")
+		}
+		if validate.Var(req.ClientMail, "required,email") != nil {
+			return Errorf(EINVALID, "Enter a valid Jira Cloud user email")
+		}
+	} else if req.AuthMethod == "basic" && (req.ClientMail == "" || strings.Contains(req.ClientMail, ":")) {
+		return Errorf(EINVALID, "Enter a Jira username without a colon for username/password authentication")
+	}
+	if strings.TrimSpace(req.AccessToken) == "" {
+		return Errorf(EINVALID, "Enter the Jira password or API token for the selected authentication method")
+	}
+	return nil
 }
 
 // handleJiraInstanceCreate creates a new Jira Instance
@@ -94,13 +123,13 @@ func (s *Service) handleJiraInstanceCreate() http.HandlerFunc {
 			return
 		}
 
-		inputErr := validate.Struct(req)
+		inputErr := req.validateInput()
 		if inputErr != nil {
-			s.Failure(w, r, http.StatusBadRequest, Errorf(EINVALID, inputErr.Error()))
+			s.Failure(w, r, http.StatusBadRequest, inputErr)
 			return
 		}
 
-		instance, err := s.JiraDataSvc.CreateInstance(ctx, userID, req.Host, req.ClientMail, req.AccessToken, req.JiraDataCenter)
+		instance, err := s.JiraDataSvc.CreateInstance(ctx, userID, req.Host, req.ClientMail, req.AccessToken, req.JiraDataCenter, req.AuthMethod)
 		if err != nil {
 			s.Logger.Ctx(ctx).Error(
 				"handleJiraInstanceCreate error", zap.Error(err), zap.String("entity_user_id", userID),
@@ -159,13 +188,23 @@ func (s *Service) handleJiraInstanceUpdate() http.HandlerFunc {
 			return
 		}
 
-		inputErr := validate.Struct(req)
+		// Updates retain the saved platform and, for older clients, the saved auth method.
+		existing, err := s.JiraDataSvc.GetInstanceByID(ctx, instanceID)
+		if err != nil || existing.UserID != userID {
+			s.Failure(w, r, http.StatusNotFound, Errorf(ENOTFOUND, "Jira instance not found"))
+			return
+		}
+		req.JiraDataCenter = existing.JiraDataCenter
+		if req.AuthMethod == "" {
+			req.AuthMethod = existing.AuthMethod
+		}
+		inputErr := req.validateInput()
 		if inputErr != nil {
-			s.Failure(w, r, http.StatusBadRequest, Errorf(EINVALID, inputErr.Error()))
+			s.Failure(w, r, http.StatusBadRequest, inputErr)
 			return
 		}
 
-		instance, err := s.JiraDataSvc.UpdateInstance(ctx, instanceID, req.Host, req.ClientMail, req.AccessToken)
+		instance, err := s.JiraDataSvc.UpdateInstance(ctx, instanceID, req.Host, req.ClientMail, req.AccessToken, req.AuthMethod)
 		if err != nil {
 			s.Logger.Ctx(ctx).Error(
 				"handleJiraInstanceUpdate error", zap.Error(err), zap.String("entity_user_id", userID),
@@ -286,27 +325,41 @@ func (s *Service) handleJiraStoryJQLSearch() http.HandlerFunc {
 		instance, err := s.JiraDataSvc.GetInstanceByID(ctx, instanceID)
 		errorTitle := "handleJiraStoryJQLSearch error"
 
-		s.logJiraSearchError(err, errorTitle, w, r, ctx, userID, instanceID, fields, req)
+		if s.logJiraSearchError(err, errorTitle, w, r, ctx, userID, instanceID, fields, req) {
+			return
+		}
+		if instance.UserID != userID {
+			s.Failure(w, r, http.StatusNotFound, Errorf(ENOTFOUND, "Jira instance not found"))
+			return
+		}
 
 		// check here for DataCenter
 		if instance.JiraDataCenter {
 
 			jiraDataCenterClient, err := CreateNewJiraDataCenterInstance(instance)
-			s.logJiraSearchError(err, errorTitle, w, r, ctx, userID, instanceID, fields, req)
+			if s.logJiraSearchError(err, errorTitle, w, r, ctx, userID, instanceID, fields, req) {
+				return
+			}
 
 			stories, err := jiraDataCenterClient.StoriesJQLSearch(ctx, req.JQL, fields, req.StartAt, req.MaxResults)
 
-			s.logErrorWithJSONResponse(err, errorTitle, w, ctx, userID, instanceID, fields, req)
+			if s.logErrorWithJSONResponse(err, errorTitle, w, ctx, userID, instanceID, fields, req) {
+				return
+			}
 			s.Success(w, r, http.StatusOK, stories, nil)
 
 		} else {
 
 			jiraClient, err := CreateNewJiraInstance(instance)
-			s.logJiraSearchError(err, errorTitle, w, r, ctx, userID, instanceID, fields, req)
+			if s.logJiraSearchError(err, errorTitle, w, r, ctx, userID, instanceID, fields, req) {
+				return
+			}
 
 			stories, err := jiraClient.StoriesJQLSearch(ctx, req.JQL, fields, req.StartAt, req.MaxResults)
 
-			s.logErrorWithJSONResponse(err, errorTitle, w, ctx, userID, instanceID, fields, req)
+			if s.logErrorWithJSONResponse(err, errorTitle, w, ctx, userID, instanceID, fields, req) {
+				return
+			}
 			s.Success(w, r, http.StatusOK, stories, nil)
 		}
 
@@ -316,6 +369,7 @@ func (s *Service) handleJiraStoryJQLSearch() http.HandlerFunc {
 func CreateNewJiraDataCenterInstance(instance thunderdome.JiraInstance) (*jira_data_center.Client, error) {
 
 	jiraClient, err := jira_data_center.New(jira_data_center.Config{
+		AuthMethod:     instance.AuthMethod,
 		InstanceHost:   instance.Host,
 		ClientMail:     instance.ClientMail,
 		JiraDataCenter: instance.JiraDataCenter,
@@ -334,15 +388,16 @@ func CreateNewJiraInstance(instance thunderdome.JiraInstance) (*jira.Client, err
 	return jiraClient, err
 }
 
-func (s *Service) logJiraSearchError(err error, errorTitle string, w http.ResponseWriter, r *http.Request, ctx context.Context, userID string, instanceID string, fields []string, req jiraStoryJQLSearchRequestBody) {
+func (s *Service) logJiraSearchError(err error, errorTitle string, w http.ResponseWriter, r *http.Request, ctx context.Context, userID string, instanceID string, fields []string, req jiraStoryJQLSearchRequestBody) bool {
 	if err != nil {
 		s.createJiraLoggerStructure(err, errorTitle, ctx, userID, instanceID, fields, req)
 		s.Failure(w, r, http.StatusInternalServerError, err)
-		return
+		return true
 	}
+	return false
 }
 
-func (s *Service) logErrorWithJSONResponse(err error, errorTitle string, w http.ResponseWriter, ctx context.Context, userID string, instanceID string, fields []string, req jiraStoryJQLSearchRequestBody) {
+func (s *Service) logErrorWithJSONResponse(err error, errorTitle string, w http.ResponseWriter, ctx context.Context, userID string, instanceID string, fields []string, req jiraStoryJQLSearchRequestBody) bool {
 
 	if err != nil {
 		s.createJiraLoggerStructure(err, errorTitle, ctx, userID, instanceID, fields, req)
@@ -359,9 +414,9 @@ func (s *Service) logErrorWithJSONResponse(err error, errorTitle string, w http.
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(response)
-		return
+		return true
 	}
-
+	return false
 }
 
 func (s *Service) createJiraLoggerStructure(err error, errorTitle string, ctx context.Context, userID string, instanceID string, fields []string, req jiraStoryJQLSearchRequestBody) {

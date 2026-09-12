@@ -10,6 +10,7 @@ type Config struct {
 	AccessToken    string `json:"access_token"`
 	ClientMail     string `json:"client_mail"`
 	JiraDataCenter bool   `json:"jira_data_center"`
+	AuthMethod     string `json:"auth_method"`
 }
 
 // Client is the Jira client

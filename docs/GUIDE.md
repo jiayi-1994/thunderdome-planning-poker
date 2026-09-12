@@ -119,6 +119,18 @@ See API Documentation here [Thunderdome API Docs](https://thunderdome.dev/swagge
 
 Integrate directly with your team's backlog to import your stories to point.
 
+For a private Jira installation, select **Jira Server / Data Center (self-hosted)** and enter its base URL (including `/jira` if your installation uses that path). Choose the authentication method that your Jira supports:
+
+| Installation | Authentication | Account field | Secret field |
+| --- | --- | --- | --- |
+| Jira Cloud | Email and API token | Atlassian email | Cloud API token |
+| Jira Server / Data Center 8.14+ | Personal access token (PAT) | Optional; PAT identifies the user | Jira PAT |
+| Older Jira Server, such as 8.3 | Username and password | Jira login username, not necessarily an email | Jira login password |
+
+The private Jira must be reachable from the Thunderdome server. The selected authentication is used for JQL imports, numeric field discovery, and point writeback. Saving a connection stores its configuration; use a JQL search or load the numeric fields to verify access. Existing connections keep their original authentication method. See Atlassian's [PAT version requirements](https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html) and [Server basic authentication](https://developer.atlassian.com/server/jira/platform/basic-authentication/).
+
+The connection API also accepts `auth_method: "basic"` or `"pat"`. Set `jira_data_center: true` for Server / Data Center. `client_mail` carries the username for basic authentication and is optional for a PAT; `access_token` carries the selected password or token. Omitting `auth_method` on creation preserves the legacy default (Cloud basic / Data Center PAT), and omitting it on update preserves the saved method.
+
 _Other integrations coming soon._
 
 ### Delete Account
@@ -177,7 +189,7 @@ Premium feature.
 
 #### Automatically write estimates back to Jira
 
-1. Add a Jira connection under **Profile → Jira Integration**. Jira Cloud uses an email and API token; Jira Data Center uses a personal access token.
+1. Add a Jira connection under **Profile → Jira Integration** using the authentication method for your installation described above.
 2. As a game facilitator, open **Game Settings → Jira 自动回写**.
 3. Enable automatic writeback, choose your Jira connection, and select the site's **Story Points** (or another numeric custom field). The account must be allowed to edit that field on the target issues.
 4. Import stories from Jira, or fill in each story's Jira reference ID and matching issue link. For example, `PROJ-123` and `https://yourjira.atlassian.net/browse/PROJ-123`.
