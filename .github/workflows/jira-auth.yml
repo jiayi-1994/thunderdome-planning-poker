@@ -14,6 +14,8 @@ on:
       - 'internal/http/http.go'
       - 'thunderdome/jira.go'
       - 'ui/src/components/jira/**'
+      - 'ui/src/components/poker/JiraWriteback*'
+      - 'ui/src/components/poker/jiraWriteback*'
       - 'ui/src/pages/user/UserProfile.svelte'
       - 'go.mod'
       - 'go.sum'
@@ -61,5 +63,5 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          npx vitest run src/components/jira/
+          npx vitest run src/components/jira/ src/components/poker/JiraWriteback.test.ts
           npm run build

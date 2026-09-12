@@ -19,11 +19,16 @@ const settings = { enabled: false, instanceId: '', fieldId: '', fieldName: '', h
 const response = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 });
 
 describe('Jira writeback settings and status', () => {
-  it('selects an owned connection and numeric field before enabling writeback', async () => {
+  it('defaults to Story Points and saves without requiring a field selection', async () => {
     const close = vi.fn();
     const xfetch = vi.fn(async (url: string, config?: ApiClientConfig) => {
       if (config?.method === 'PUT') return response(settings);
-      if (url.includes('/fields')) return response([{ id: 'customfield_10016', name: 'Story Points' }]);
+      if (url.includes('/fields'))
+        return response([
+          { id: 'customfield_13565', name: 'CloseHours' },
+          { id: 'customfield_13704', name: 'issue创建Story Point' },
+          { id: 'customfield_10006', name: 'Story Points' },
+        ]);
       return response({ settings, instances: [{ id: 'jira-one', host: 'https://team.atlassian.net' }] });
     });
     render(JiraWritebackSettings, { gameId: 'game', xfetch, notifications, close });
@@ -31,13 +36,63 @@ describe('Jira writeback settings and status', () => {
     await expect.element(page.getByTestId('jira-writeback-save')).toBeDisabled();
     await userEvent.selectOptions(page.getByRole('combobox', { name: 'Jira 实例' }), 'jira-one');
     await expect.element(page.getByRole('combobox', { name: '点数字段' })).not.toBeDisabled();
-    await userEvent.selectOptions(page.getByRole('combobox', { name: '点数字段' }), 'customfield_10016');
+    await expect.element(page.getByRole('combobox', { name: '点数字段' })).toHaveValue('customfield_10006');
     await page.getByTestId('jira-writeback-save').click();
     expect(xfetch).toHaveBeenCalledWith('/api/battles/game/jira-writeback', {
       method: 'PUT',
-      body: { enabled: true, instanceId: 'jira-one', fieldId: 'customfield_10016' },
+      body: { enabled: true, instanceId: 'jira-one', fieldId: 'customfield_10006' },
     });
     expect(close).toHaveBeenCalled();
+  });
+
+  it.each([
+    { savedField: '', expected: 'customfield_10006' },
+    { savedField: 'customfield_99999', expected: 'customfield_10006' },
+    { savedField: 'customfield_13565', expected: 'customfield_13565' },
+  ])(
+    'resolves the default on reopening while preserving valid saved fields ($savedField)',
+    async ({ savedField, expected }) => {
+      render(JiraWritebackSettings, {
+        gameId: 'game',
+        xfetch: async (url: string) =>
+          url.includes('/fields')
+            ? response([
+                { id: 'customfield_13565', name: 'CloseHours' },
+                { id: 'customfield_10006', name: 'Story Points' },
+              ])
+            : response({
+                settings: { ...settings, enabled: true, instanceId: 'jira-one', fieldId: savedField },
+                instances: [{ id: 'jira-one', host: 'https://team.atlassian.net' }],
+              }),
+        notifications,
+        close: vi.fn(),
+      });
+      await expect.element(page.getByRole('combobox', { name: '点数字段' })).toHaveValue(expected);
+      await expect.element(page.getByTestId('jira-writeback-save')).not.toBeDisabled();
+    },
+  );
+
+  it.each([
+    [{ id: 'customfield_13565', name: 'CloseHours' }],
+    [
+      { id: 'customfield_1', name: 'Story Points' },
+      { id: 'customfield_2', name: 'Story Points' },
+    ],
+  ])('requires an explicit choice when Story Points is missing or ambiguous (%j)', async (...fields) => {
+    render(JiraWritebackSettings, {
+      gameId: 'game',
+      xfetch: async (url: string) =>
+        url.includes('/fields')
+          ? response(fields)
+          : response({
+              settings: { ...settings, enabled: true, instanceId: 'jira-one' },
+              instances: [{ id: 'jira-one', host: 'https://team.atlassian.net' }],
+            }),
+      notifications,
+      close: vi.fn(),
+    });
+    await expect.element(page.getByRole('combobox', { name: '点数字段' })).toHaveValue('');
+    await expect.element(page.getByTestId('jira-writeback-save')).toBeDisabled();
   });
 
   it('does not enable saving when settings could not be loaded', async () => {
@@ -58,7 +113,7 @@ describe('Jira writeback settings and status', () => {
     });
     const xfetch = vi.fn(async (url: string) => {
       if (url.includes('instanceId=one')) return first;
-      if (url.includes('instanceId=two')) return response([{ id: 'customfield_2', name: 'Second points' }]);
+      if (url.includes('instanceId=two')) return response([{ id: 'customfield_2', name: 'Story Points' }]);
       return response({
         settings,
         instances: [
@@ -71,10 +126,13 @@ describe('Jira writeback settings and status', () => {
     await page.getByRole('checkbox').click();
     await userEvent.selectOptions(page.getByRole('combobox', { name: 'Jira 实例' }), 'one');
     await userEvent.selectOptions(page.getByRole('combobox', { name: 'Jira 实例' }), 'two');
-    await expect.element(page.getByRole('option', { name: 'Second points（customfield_2）' })).toBeInTheDocument();
-    finishFirst?.(response([{ id: 'customfield_1', name: 'First points' }]));
-    await expect.element(page.getByRole('option', { name: 'First points（customfield_1）' })).not.toBeInTheDocument();
+    await expect.element(page.getByRole('combobox', { name: '点数字段' })).toHaveValue('customfield_2');
+    finishFirst?.(response([{ id: 'customfield_1', name: 'Story Points' }]));
+    await first;
+    await new Promise(requestAnimationFrame);
+    await expect.element(page.getByRole('option', { name: 'Story Points（customfield_1）' })).not.toBeInTheDocument();
     await expect.element(page.getByRole('combobox', { name: 'Jira 实例' })).toHaveValue('two');
+    await expect.element(page.getByRole('combobox', { name: '点数字段' })).toHaveValue('customfield_2');
   });
 
   it('shows failure without losing points and only offers retry to facilitators', async () => {

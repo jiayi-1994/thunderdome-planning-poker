@@ -52,6 +52,10 @@
       const result = await res.json();
       if (request !== fieldRequest || closed) return;
       fields = result.data;
+      if (!fields.some((field) => field.id === settings.fieldId)) {
+        const storyPoints = fields.filter((field) => field.name.trim().toLowerCase() === 'story points');
+        settings.fieldId = storyPoints.length === 1 ? storyPoints[0].id : '';
+      }
       if (fields.length === 0) fieldsError = '此 Jira 实例没有可用的数字字段，请先配置 Story Points 字段。';
     } catch (error) {
       const message = await jiraErrorMessage(error, '读取 Jira 字段失败，请重试。');
@@ -165,9 +169,12 @@
             disabled={saving || loadingFields || fields.length === 0}
             class="block w-full rounded border border-gray-300 p-2 bg-white dark:bg-gray-900 dark:border-gray-600 dark:text-white"
           >
-            <option value="" disabled>{loadingFields ? '正在读取字段…' : '选择 Story Points 或其他数字字段'}</option>
+            <option value="" disabled>{loadingFields ? '正在读取字段…' : '选择 Story Points 字段'}</option>
             {#each fields as field}<option value={field.id}>{field.name}（{field.id}）</option>{/each}
           </select>
+          <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+            默认选择 Story Points，回写 Jira 中的“预估”分数。
+          </p>
           {#if fieldsError}
             <p role="alert" class="mt-2 text-sm text-red-700 dark:text-red-400">{fieldsError}</p>
             <button

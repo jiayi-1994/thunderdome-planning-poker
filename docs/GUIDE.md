@@ -193,7 +193,7 @@ Premium feature.
 
 1. Add a Jira connection under **Profile → Jira Integration** using the authentication method for your installation described above.
 2. As a game facilitator, open **Game Settings → Jira 自动回写**.
-3. Enable automatic writeback, choose your Jira connection, and select the site's **Story Points** (or another numeric custom field). The account must be allowed to edit that field on the target issues.
+3. Enable automatic writeback and choose your Jira connection. The site's **Story Points** field is selected automatically when it has a unique match; an existing valid field selection is preserved. The account must be allowed to edit that field on the target issues. If Story Points is missing or ambiguous, check the Jira field configuration or select the intended numeric field before saving.
 4. Import stories from Jira, or fill in each story's Jira reference ID and matching issue link. For example, `PROJ-123` and `https://yourjira.atlassian.net/browse/PROJ-123`.
 
 When the two-minute countdown ends, a facilitator finishes voting, or auto-finish ends the round, the server writes the sum of the testing, frontend, and backend averages. Only numeric votes count toward each average; nonvoters and abstentions do not count. Zero is a valid estimate. A round with no numeric votes does not overwrite Jira. Legacy single-category voting writes after the facilitator saves its final numeric estimate.
