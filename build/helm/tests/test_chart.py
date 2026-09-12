@@ -54,6 +54,7 @@ class ChartTest(unittest.TestCase):
         self.assertEqual(config["DB_HOST"], "thunderdome-postgresql")
         self.assertEqual(config["COOKIE_SECURE"], "false")
         self.assertEqual(config["SMTP_ENABLED"], "false")
+        self.assertEqual(config["HTTP_WRITE_TIMEOUT"], "60")
 
     def test_retains_database_and_credentials(self):
         docs = self.render()

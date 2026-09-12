@@ -23,6 +23,8 @@ app:
   # Hostname only, without protocol, port, or path.
   domain: localhost
   https: false
+  # Response write deadline in seconds; allow initial JS downloads over slower links.
+  httpWriteTimeout: 60
   # Empty or /prefix (no trailing slash).
   pathPrefix: ""
   adminEmail: ""

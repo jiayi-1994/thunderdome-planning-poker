@@ -6,6 +6,7 @@ on:
     paths:
       - build/helm/thunderdome/**
       - build/helm/tests/**
+      - build/tests/check_static_assets.py
       - .github/workflows/helm.yml
   workflow_dispatch:
 
@@ -36,7 +37,7 @@ jobs:
           /tmp/kind create cluster --name helm-test --wait 90s
       - name: Install packaged chart using domestic mirrors
         run: |
-          helm upgrade --install thunderdome dist/helm/thunderdome-0.1.0.tgz \
+          helm upgrade --install thunderdome dist/helm/thunderdome-0.1.1.tgz \
             -n thunderdome --create-namespace \
             -f build/helm/thunderdome/examples/values-cn.yaml \
             -f build/helm/thunderdome/examples/values-pinned.yaml \
@@ -56,8 +57,9 @@ jobs:
           curl --fail --retry 15 --retry-connrefused --retry-delay 2 http://localhost:8080/healthz
           curl --fail http://localhost:8080/ -o /tmp/index.html
           grep -q '<html' /tmp/index.html
+          python build/tests/check_static_assets.py http://localhost:8080/
           kill "$forward_pid"
-          helm upgrade thunderdome dist/helm/thunderdome-0.1.0.tgz -n thunderdome \
+          helm upgrade thunderdome dist/helm/thunderdome-0.1.1.tgz -n thunderdome \
             -f build/helm/thunderdome/examples/values-cn.yaml \
             -f build/helm/thunderdome/examples/values-pinned.yaml \
             --set app.pathPrefix=/poker --wait --timeout 5m
@@ -74,7 +76,7 @@ jobs:
           kill "$forward_pid"
           helm uninstall thunderdome -n thunderdome
           kubectl -n thunderdome get pvc/thunderdome-postgresql secret/thunderdome-secrets -o name
-          helm install thunderdome dist/helm/thunderdome-0.1.0.tgz -n thunderdome \
+          helm install thunderdome dist/helm/thunderdome-0.1.1.tgz -n thunderdome \
             -f build/helm/thunderdome/examples/values-cn.yaml \
             -f build/helm/thunderdome/examples/values-pinned.yaml \
             --wait --timeout 5m

@@ -13,7 +13,7 @@
 kubectl get storageclass
 
 # 国内镜像配置；无需代理时去掉 -f values-cn.yaml
-helm upgrade --install thunderdome ./thunderdome-0.1.0.tgz \
+helm upgrade --install thunderdome ./thunderdome-0.1.1.tgz \
   --namespace thunderdome --create-namespace \
   -f values-cn.yaml --wait --timeout 10m
 
@@ -21,7 +21,7 @@ kubectl -n thunderdome get pods,pvc,svc
 kubectl -n thunderdome port-forward svc/thunderdome 8080:8080
 ```
 
-浏览器打开 `http://localhost:8080`。默认关闭邮件发送；需要注册邮件、密码重置等邮件能力时，配置 `app.smtpEnabled: true` 及 SMTP 环境变量。完整 values 可用 `helm show values ./thunderdome-0.1.0.tgz` 查看。
+浏览器打开 `http://localhost:8080`。默认关闭邮件发送；需要注册邮件、密码重置等邮件能力时，配置 `app.smtpEnabled: true` 及 SMTP 环境变量。完整 values 可用 `helm show values ./thunderdome-0.1.1.tgz` 查看。
 
 ## 2. 镜像代理和固定版本
 
@@ -39,7 +39,7 @@ kubectl -n thunderdome port-forward svc/thunderdome 8080:8080
 可追加 `-f values-pinned.yaml` 固定本次应用和数据库镜像摘要，例如：
 
 ```bash
-helm upgrade --install thunderdome ./thunderdome-0.1.0.tgz \
+helm upgrade --install thunderdome ./thunderdome-0.1.1.tgz \
   -n thunderdome --create-namespace \
   -f values-cn.yaml -f values-pinned.yaml --wait --timeout 10m
 ```
@@ -71,7 +71,7 @@ skopeo copy --all \
 复制并修改 `values-nodeport.yaml` 的 `app.domain` 为浏览器能访问的域名或 IPv4 地址，不带协议、端口、路径。
 
 ```bash
-helm upgrade --install thunderdome ./thunderdome-0.1.0.tgz \
+helm upgrade --install thunderdome ./thunderdome-0.1.1.tgz \
   -n thunderdome --create-namespace \
   -f values-cn.yaml -f values-nodeport.yaml --wait --timeout 10m
 ```
@@ -83,7 +83,7 @@ helm upgrade --install thunderdome ./thunderdome-0.1.0.tgz \
 复制并修改 `values-ingress.yaml` 中的域名、IngressClass 和证书 Secret。集群应已有 Ingress Controller；配置 DNS，并在同一 namespace 创建 TLS Secret。
 
 ```bash
-helm upgrade --install thunderdome ./thunderdome-0.1.0.tgz \
+helm upgrade --install thunderdome ./thunderdome-0.1.1.tgz \
   -n thunderdome --create-namespace \
   -f values-cn.yaml -f values-ingress.yaml --wait --timeout 10m
 ```
@@ -136,3 +136,5 @@ kubectl -n thunderdome get events --sort-by=.lastTimestamp
 `ImagePullBackOff` 检查镜像代理、节点网络及拉取凭证；PVC Pending 检查 StorageClass 和容量；数据库权限错误检查卷是否支持 `fsGroup: 999` 及 PostgreSQL 用户写入。应用 `/healthz` 只确认 HTTP 服务运行，不能代替数据库可用性和业务检查。`--wait` 超时后可修正配置并重新执行升级命令。
 
 Chart 没有额外初始化镜像。应用内置等待数据库的逻辑，默认启动探针允许约 10 分钟启动时间。
+
+Chart 0.1.1 将应用响应写入超时设置为 60 秒，避免较慢网络并行下载较大 JS 文件时触发 `ERR_CONTENT_LENGTH_MISMATCH`。可用 `app.httpWriteTimeout` 调整（秒）。

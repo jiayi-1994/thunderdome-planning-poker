@@ -29,6 +29,7 @@ docker compose ps
 | --- | --- |
 | `APP_DOMAIN` | 浏览器访问的域名或 IPv4，不含协议、端口、路径 |
 | `HTTP_PORT` | 宿主机端口，默认 8080 |
+| `HTTP_WRITE_TIMEOUT` | 响应写入超时秒数，默认 60；避免慢速网络并行下载较大 JS 时被截断 |
 | `BIND_ADDRESS` | 默认 `0.0.0.0`；仅本机反向代理访问可设 `127.0.0.1` |
 | `APP_HTTPS` | 通过 HTTPS 反向代理访问时设 `true`，同时启用安全 Cookie 和 WebSocket TLS |
 | `ADMIN_EMAIL` | 可选的管理员邮箱 |

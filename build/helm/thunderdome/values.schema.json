@@ -16,6 +16,7 @@
       "properties": {
         "domain": {"type": "string", "minLength": 1, "maxLength": 253, "pattern": "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$"},
         "https": {"type": "boolean"},
+        "httpWriteTimeout": {"type": "integer", "minimum": 1, "maximum": 3600},
         "pathPrefix": {"type": "string", "pattern": "^$|^/[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)*$"},
         "smtpEnabled": {"type": "boolean"},
         "extraEnv": {"type": "array"},

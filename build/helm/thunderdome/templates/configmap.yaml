@@ -7,6 +7,7 @@ metadata:
 data:
   APP_DOMAIN: {{ .Values.app.domain | quote }}
   PORT: "8080"
+  HTTP_WRITE_TIMEOUT: {{ .Values.app.httpWriteTimeout | quote }}
   PATH_PREFIX: {{ .Values.app.pathPrefix | quote }}
   HTTP_SECURE_PROTOCOL: {{ or .Values.app.https (and .Values.ingress.enabled .Values.ingress.tls.enabled) | quote }}
   COOKIE_SECURE: {{ or .Values.app.https (and .Values.ingress.enabled .Values.ingress.tls.enabled) | quote }}
