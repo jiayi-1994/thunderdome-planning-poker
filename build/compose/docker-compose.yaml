@@ -1,0 +1,75 @@
+# Run `sh init-env.sh` once, edit APP_DOMAIN in .env, then `docker compose up -d`.
+# Use Docker Compose v2.20+ with Linux containers.
+name: thunderdome
+
+services:
+  thunderdome:
+    image: ${APP_IMAGE:-ghcr.nju.edu.cn/jiayi-1994/thunderdome-planning-poker:latest}
+    restart: unless-stopped
+    # The application's WebSocket state lives in one process. Do not scale out.
+    deploy:
+      replicas: 1
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${HTTP_PORT:-8080}:8080"
+    environment:
+      PORT: "8080"
+      # Hostname or IPv4 only, without protocol, port, or path.
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      HTTP_SECURE_PROTOCOL: "${APP_HTTPS:-false}"
+      COOKIE_SECURE: "${APP_HTTPS:-false}"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      SMTP_ENABLED: "false"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: thunderdome
+      DB_USER: thunderdome
+      DB_PASS: ${DB_PASSWORD:?Run sh init-env.sh or set DB_PASSWORD in .env}
+      DB_SSLMODE: disable
+      COOKIE_HASHKEY: ${COOKIE_HASHKEY:?Run sh init-env.sh or set COOKIE_HASHKEY in .env}
+      CONFIG_AES_HASHKEY: ${CONFIG_AES_HASHKEY:?Run sh init-env.sh or set CONFIG_AES_HASHKEY in .env}
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: ${POSTGRES_IMAGE:-m.daocloud.io/docker.io/library/postgres:17-bookworm}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: thunderdome
+      POSTGRES_USER: thunderdome
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Run sh init-env.sh or set DB_PASSWORD in .env}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Use TCP so the temporary Unix-socket-only initdb server is not considered ready.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    # Do not publish the database port to the host.
+    shm_size: 256mb
+    mem_limit: 1g
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:

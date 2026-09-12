@@ -1,0 +1,65 @@
+name: Verify Docker Compose deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - build/compose/**
+      - .github/workflows/compose.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: build/compose
+    env:
+      COMPOSE_PROJECT_NAME: thunderdome-compose-test
+      HTTP_PORT: "18080"
+      BIND_ADDRESS: "127.0.0.1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Verify credential initialization and Compose configuration
+        run: |
+          set -euo pipefail
+          if docker compose --env-file .env.example config --quiet 2>/dev/null; then
+            echo 'Expected empty credentials to fail validation' >&2
+            exit 1
+          fi
+          sh init-env.sh
+          test "$(stat -c %a .env)" = 600
+          before=$(sha256sum .env)
+          sh init-env.sh
+          test "$before" = "$(sha256sum .env)"
+          docker compose config --quiet
+      - name: Start through domestic mirrors
+        run: |
+          docker compose pull
+          docker compose up -d --wait --wait-timeout 180
+      - name: Check HTTP, migrations, and retained data
+        run: |
+          set -euo pipefail
+          curl --fail --retry 30 --retry-connrefused --retry-delay 2 http://localhost:18080/healthz
+          curl --fail http://localhost:18080/ -o /tmp/compose-index.html
+          grep -q '<html' /tmp/compose-index.html
+          sql() { docker compose exec -T db psql -v ON_ERROR_STOP=1 -U thunderdome -d thunderdome -Atc "$1"; }
+          test "$(sql "SELECT to_regclass('thunderdome.poker_jira_settings') IS NOT NULL")" = t
+          sql 'CREATE TABLE public.compose_smoke (value text); INSERT INTO public.compose_smoke VALUES ('"'retained'"');'
+          docker compose down
+          docker compose up -d --wait --wait-timeout 180
+          test "$(sql 'SELECT value FROM public.compose_smoke')" = retained
+          curl --fail --retry 30 --retry-connrefused --retry-delay 2 http://localhost:18080/healthz
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          docker compose ps --all || true
+          docker compose logs --tail=100 || true
+      - name: Remove disposable test resources
+        if: always()
+        run: docker compose down --volumes --remove-orphans
