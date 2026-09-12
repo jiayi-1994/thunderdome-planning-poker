@@ -191,6 +191,7 @@ func New(apiService Service, FSS fs.FS, HFS http.FileSystem) *Service {
 	router.Handle("PUT "+prefix+"/api/users/{userId}/jira-instances/{instanceId}", a.userOnly(a.entityUserOnly(a.subscribedEntityUserOnly(a.handleJiraInstanceUpdate()))))
 	router.Handle("DELETE "+prefix+"/api/users/{userId}/jira-instances/{instanceId}", a.userOnly(a.entityUserOnly(a.subscribedEntityUserOnly(a.handleJiraInstanceDelete()))))
 	router.Handle("POST "+prefix+"/api/users/{userId}/jira-instances/{instanceId}/jql-story-search", a.userOnly(a.entityUserOnly(a.subscribedEntityUserOnly(a.handleJiraStoryJQLSearch()))))
+	router.Handle("POST "+prefix+"/api/users/{userId}/jira-instances/{instanceId}/test", a.userOnly(a.entityUserOnly(a.subscribedEntityUserOnly(a.handleJiraInstanceTest()))))
 
 	if a.Config.ExternalAPIEnabled {
 		router.Handle("GET "+prefix+"/api/users/{userId}/apikeys", a.userOnly(a.entityUserOnly(a.handleUserAPIKeys())))

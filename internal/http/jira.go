@@ -86,6 +86,13 @@ func (req *jiraInstanceRequestBody) validateInput() error {
 	return nil
 }
 
+func (req jiraInstanceRequestBody) connectionConfig() thunderdome.JiraInstance {
+	return thunderdome.JiraInstance{
+		Host: req.Host, ClientMail: req.ClientMail, AccessToken: req.AccessToken,
+		JiraDataCenter: req.JiraDataCenter, AuthMethod: req.AuthMethod,
+	}
+}
+
 // handleJiraInstanceCreate creates a new Jira Instance
 //
 //	@Summary		Create Jira Instance
@@ -129,6 +136,10 @@ func (s *Service) handleJiraInstanceCreate() http.HandlerFunc {
 			return
 		}
 
+		if _, err := jira.CheckConnection(ctx, req.connectionConfig()); err != nil {
+			s.Failure(w, r, http.StatusUnprocessableEntity, Errorf(EINVALID, err.Error()))
+			return
+		}
 		instance, err := s.JiraDataSvc.CreateInstance(ctx, userID, req.Host, req.ClientMail, req.AccessToken, req.JiraDataCenter, req.AuthMethod)
 		if err != nil {
 			s.Logger.Ctx(ctx).Error(
@@ -204,6 +215,10 @@ func (s *Service) handleJiraInstanceUpdate() http.HandlerFunc {
 			return
 		}
 
+		if _, err := jira.CheckConnection(ctx, req.connectionConfig()); err != nil {
+			s.Failure(w, r, http.StatusUnprocessableEntity, Errorf(EINVALID, err.Error()))
+			return
+		}
 		instance, err := s.JiraDataSvc.UpdateInstance(ctx, instanceID, req.Host, req.ClientMail, req.AccessToken, req.AuthMethod)
 		if err != nil {
 			s.Logger.Ctx(ctx).Error(

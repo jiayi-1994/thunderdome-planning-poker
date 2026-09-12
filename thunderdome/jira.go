@@ -15,3 +15,8 @@ type JiraInstance struct {
 	CreatedDate    time.Time `json:"created_date"`
 	UpdatedDate    time.Time `json:"updated_date"`
 }
+
+type JiraConnectionStatus struct {
+	Connected   bool   `json:"connected"`
+	DisplayName string `json:"display_name,omitempty"`
+}

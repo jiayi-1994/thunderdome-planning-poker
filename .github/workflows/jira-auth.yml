@@ -11,8 +11,10 @@ on:
       - 'internal/db/poker/*test.go'
       - 'internal/http/jira*'
       - 'internal/http/types.go'
+      - 'internal/http/http.go'
       - 'thunderdome/jira.go'
       - 'ui/src/components/jira/**'
+      - 'ui/src/pages/user/UserProfile.svelte'
       - 'go.mod'
       - 'go.sum'
       - 'ui/package*.json'
@@ -59,5 +61,5 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          npx vitest run src/components/jira/CreateJiraInstance.test.ts
+          npx vitest run src/components/jira/
           npm run build

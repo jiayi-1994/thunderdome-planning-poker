@@ -11,6 +11,7 @@
   import CreateApiKey from '../../components/user/CreateApiKey.svelte';
   import DeleteConfirmation from '../../components/global/DeleteConfirmation.svelte';
   import CreateJiraInstance from '../../components/jira/CreateJiraInstance.svelte';
+  import TestJiraConnection from '../../components/jira/TestJiraConnection.svelte';
   import SolidButton from '../../components/global/SolidButton.svelte';
   import UserSubscriptionsList from '../../components/subscription/UserSubscriptionsList.svelte';
   import BooleanDisplay from '../../components/global/BooleanDisplay.svelte';
@@ -501,7 +502,7 @@
                           scope="col"
                           class="px-6 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Client Mail
+                          Jira Account
                         </th>
                         <th scope="col" class="relative px-6 py-3">
                           <span class="sr-only">{$LL.actions()}</span>
@@ -511,7 +512,7 @@
                     <tbody
                       class="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-800 dark:text-white"
                     >
-                      {#each jiraInstances as ji, i}
+                      {#each jiraInstances as ji, i (ji.id)}
                         <tr
                           class:bg-slate-100={i % 2 !== 0}
                           class:dark:bg-gray-800={i % 2 !== 0}
@@ -523,9 +524,12 @@
                             {ji.client_mail}
                           </td>
                           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <HollowButton color="red" onClick={deleteJiraInstance(ji.id)} testid="jira-delete">
-                              {$LL.delete()}
-                            </HollowButton>
+                            <div class="flex items-start justify-end gap-2">
+                              <TestJiraConnection instanceId={ji.id} {xfetch} />
+                              <HollowButton color="red" onClick={deleteJiraInstance(ji.id)} testid="jira-delete">
+                                {$LL.delete()}
+                              </HollowButton>
+                            </div>
                           </td>
                         </tr>
                       {/each}

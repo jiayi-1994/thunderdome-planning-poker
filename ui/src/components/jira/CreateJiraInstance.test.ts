@@ -19,8 +19,28 @@ const setup = (xfetch = vi.fn().mockResolvedValue(new Response('{}'))) => {
 };
 
 describe('Jira connection authentication', () => {
+  it('prevents editing credentials while the server validates and saves', async () => {
+    let finish: (response: Response) => void = () => {};
+    const xfetch = vi.fn(
+      () =>
+        new Promise<Response>(resolve => {
+          finish = resolve;
+        }),
+    );
+    const { handleCreate } = setup(xfetch);
+    await page.getByLabelText('Host', { exact: true }).fill('https://example.atlassian.net');
+    await page.getByLabelText('Jira User Email').fill('jira@example.com');
+    await page.getByLabelText('API Access Token', { exact: true }).fill('test-token');
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await expect.element(page.getByRole('button', { name: 'Checking and saving...' })).toBeDisabled();
+    await expect.element(page.getByLabelText('Host', { exact: true })).toBeDisabled();
+    expect(xfetch).toHaveBeenCalledTimes(1);
+    finish(new Response('{}'));
+    await expect.poll(() => handleCreate.mock.calls.length).toBe(1);
+  });
+
   it('supports a non-email Jira Server username and hides the password', async () => {
-    const { xfetch, handleCreate } = setup();
+    const { xfetch, handleCreate, notifications } = setup();
     await page.getByLabelText('Host', { exact: true }).fill('http://jira.example.com');
     await page.getByRole('checkbox').click();
     await page.getByLabelText('Authentication', { exact: true }).selectOptions('basic');
@@ -29,6 +49,7 @@ describe('Jira connection authentication', () => {
     await expect.element(page.getByLabelText('Jira Password')).toHaveAttribute('type', 'password');
     await page.getByRole('button', { name: 'Create', exact: true }).click();
     await expect.poll(() => handleCreate.mock.calls.length).toBe(1);
+    expect(notifications.success).toHaveBeenCalledWith('Jira connection verified and saved');
     expect(xfetch.mock.calls[0][1].body).toEqual({
       host: 'http://jira.example.com',
       client_mail: 'jira.user',

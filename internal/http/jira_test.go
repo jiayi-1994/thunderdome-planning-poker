@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,6 +37,10 @@ func (s *jiraInstanceStub) UpdateInstance(_ context.Context, _, host, mail, toke
 }
 
 func TestJiraInstanceCreateAuthentication(t *testing.T) {
+	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"name":"jira.user","active":true}`)
+	}))
+	defer remote.Close()
 	for _, tc := range []struct {
 		name, username, method string
 		dataCenter, accepted   bool
@@ -53,7 +58,7 @@ func TestJiraInstanceCreateAuthentication(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			stub := &jiraInstanceStub{}
 			svc := &Service{JiraDataSvc: stub}
-			body, _ := json.Marshal(jiraInstanceRequestBody{Host: "http://jira.example.com", ClientMail: tc.username, AccessToken: "test-secret", JiraDataCenter: tc.dataCenter, AuthMethod: tc.method})
+			body, _ := json.Marshal(jiraInstanceRequestBody{Host: remote.URL, ClientMail: tc.username, AccessToken: "test-secret", JiraDataCenter: tc.dataCenter, AuthMethod: tc.method})
 			res := callJiraInstance(svc.handleJiraInstanceCreate(), "POST", string(body))
 			if tc.accepted {
 				if res.Code != 200 || !stub.saved || stub.instance.AuthMethod != tc.method {
@@ -67,9 +72,16 @@ func TestJiraInstanceCreateAuthentication(t *testing.T) {
 }
 
 func TestJiraUpdateRetainsSavedPlatformAndAuth(t *testing.T) {
+	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/api/2/myself" {
+			t.Error("saved Server platform was not used for validation")
+		}
+		fmt.Fprint(w, `{"name":"jira.user","active":true}`)
+	}))
+	defer remote.Close()
 	stub := &jiraInstanceStub{instance: thunderdome.JiraInstance{UserID: "00000000-0000-0000-0000-000000000011", JiraDataCenter: true, AuthMethod: "basic"}}
 	svc := &Service{JiraDataSvc: stub}
-	body := `{"host":"http://jira.example.com","client_mail":"jira.user","access_token":"test-password"}`
+	body := fmt.Sprintf(`{"host":%q,"client_mail":"jira.user","access_token":"test-password"}`, remote.URL)
 	res := callJiraInstance(svc.handleJiraInstanceUpdate(), "PUT", body)
 	if res.Code != 200 || !stub.saved || stub.instance.AuthMethod != "basic" || !stub.instance.JiraDataCenter {
 		t.Fatalf("legacy update lost Server authentication: %d %s", res.Code, res.Body.String())
