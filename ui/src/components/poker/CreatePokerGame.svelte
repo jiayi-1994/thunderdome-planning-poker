@@ -129,6 +129,11 @@
       .then(res => res.json())
       .then(function (result) {
         const battle = result.data;
+        if (result.meta?.jiraWritebackWarning) {
+          notifications.warning(result.meta.jiraWritebackWarning);
+        } else if (result.meta?.jiraWritebackEnabled) {
+          notifications.success($LL.jiraWritebackAutoEnabled());
+        }
         router.route(`${appRoutes.game}/${battle.id}`);
       })
       .catch(function (error) {

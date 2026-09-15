@@ -814,6 +814,7 @@ const zh: Translation = {
   themeAuto: '跟随系统',
   selectPointsError: '请选择评点尺度和允许的分值。',
   getEstimationScalesError: '获取评点尺度失败',
+  jiraWritebackAutoEnabled: '已自动开启 Jira Story Points 回写，点击“保存”确认评点后才会回写点数。',
 };
 
 export default zh;

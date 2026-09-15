@@ -3186,7 +3186,7 @@ const docTemplate = `{
                 ]
             },
             "put": {
-                "description": "Facilitators can authorize their own Jira connection for future voting completions. The selected field must be numeric.",
+                "description": "Facilitators can authorize their own Jira connection for future saved estimates. Only clicking Save queues a write; voting completion alone never writes. The selected field must be numeric.",
                 "consumes": [
                     "application/json"
                 ],
@@ -8124,7 +8124,7 @@ const docTemplate = `{
                 ]
             },
             "post": {
-                "description": "Create a new poker game associated with a specific project",
+                "description": "Create a new poker game associated with a specific project. A unique creator-owned Jira connection and Story Points numeric field automatically enable writeback after Save. Optional initialization problems are returned in meta.jiraWritebackWarning without failing creation.",
                 "consumes": [
                     "application/json"
                 ],
@@ -8167,6 +8167,9 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/thunderdome.Poker"
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/http.pokerCreationMeta"
                                         }
                                     }
                                 }
@@ -13352,7 +13355,7 @@ const docTemplate = `{
         },
         "/teams/{teamId}/users/{userId}/battles": {
             "post": {
-                "description": "Create a poker game associated to the user",
+                "description": "Create a poker game associated to the user. A unique creator-owned Jira connection and Story Points numeric field automatically enable writeback after Save. Optional initialization problems are returned in meta.jiraWritebackWarning without failing creation.",
                 "produces": [
                     "application/json"
                 ],
@@ -13396,6 +13399,9 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/thunderdome.Poker"
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/http.pokerCreationMeta"
                                         }
                                     }
                                 }
@@ -14193,7 +14199,7 @@ const docTemplate = `{
                 ]
             },
             "post": {
-                "description": "Create a poker game associated to the user",
+                "description": "Create a poker game associated to the user. A unique creator-owned Jira connection and Story Points numeric field automatically enable writeback after Save. Optional initialization problems are returned in meta.jiraWritebackWarning without failing creation.",
                 "produces": [
                     "application/json"
                 ],
@@ -14231,6 +14237,9 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/thunderdome.Poker"
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/http.pokerCreationMeta"
                                         }
                                     }
                                 }
@@ -15875,7 +15884,7 @@ const docTemplate = `{
         },
         "/{orgId}/departments/{departmentId}/teams/{teamId}/users/{userId}/battles": {
             "post": {
-                "description": "Create a poker game associated to the user",
+                "description": "Create a poker game associated to the user. A unique creator-owned Jira connection and Story Points numeric field automatically enable writeback after Save. Optional initialization problems are returned in meta.jiraWritebackWarning without failing creation.",
                 "produces": [
                     "application/json"
                 ],
@@ -15931,6 +15940,9 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/thunderdome.Poker"
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/http.pokerCreationMeta"
                                         }
                                     }
                                 }
@@ -16127,7 +16139,7 @@ const docTemplate = `{
         },
         "/{orgId}/teams/{teamId}/users/{userId}/battles": {
             "post": {
-                "description": "Create a poker game associated to the user",
+                "description": "Create a poker game associated to the user. A unique creator-owned Jira connection and Story Points numeric field automatically enable writeback after Save. Optional initialization problems are returned in meta.jiraWritebackWarning without failing creation.",
                 "produces": [
                     "application/json"
                 ],
@@ -16177,6 +16189,9 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/thunderdome.Poker"
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/http.pokerCreationMeta"
                                         }
                                     }
                                 }
@@ -19719,6 +19734,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "warriorId": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.pokerCreationMeta": {
+            "type": "object",
+            "properties": {
+                "jiraWritebackEnabled": {
+                    "type": "boolean"
+                },
+                "jiraWritebackWarning": {
                     "type": "string"
                 }
             }

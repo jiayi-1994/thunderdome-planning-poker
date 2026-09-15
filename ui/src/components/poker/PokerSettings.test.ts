@@ -20,7 +20,10 @@ const notifications = {
 };
 const response = (data: unknown) => new Response(JSON.stringify({ data }), { status: 200 });
 const visibleCards = () =>
-  Array.from(document.querySelectorAll<HTMLInputElement>('input[type="checkbox"][value]:not([value=""])'), input => input.value);
+  Array.from(
+    document.querySelectorAll<HTMLInputElement>('input[type="checkbox"][value]:not([value=""])'),
+    input => input.value,
+  );
 
 describe('Poker countdown and card settings', () => {
   it('loads a saved duration and saves the revised duration in seconds during an active round', async () => {
@@ -88,5 +91,45 @@ describe('Poker countdown and card settings', () => {
     await expect.poll(visibleCards).toEqual(deck);
     await page.getByRole('button', { name: 'Thunderdome Default', exact: true }).click();
     await expect.element(page.getByRole('button', { name: 'T-Shirt Sizes' })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    { scope: 'user' as const, apiPrefix: '/api', meta: { jiraWritebackEnabled: true } },
+    { scope: 'project' as const, apiPrefix: '/api/projects/project', meta: { jiraWritebackEnabled: true } },
+    {
+      scope: 'user' as const,
+      apiPrefix: '/api',
+      meta: { jiraWritebackEnabled: false, jiraWritebackWarning: '会议已创建，但 Jira 连接失败，请检查配置。' },
+    },
+    { scope: 'user' as const, apiPrefix: '/api', meta: { jiraWritebackEnabled: false } },
+  ])('opens the created $scope game and reports Jira initialization: $meta', async ({ scope, apiPrefix, meta }) => {
+    vi.clearAllMocks();
+    const route = vi.fn();
+    const xfetch = vi.fn(async (url: string, config?: { body?: unknown }) => {
+      if (config?.body) return new Response(JSON.stringify({ data: { id: 'new-game' }, meta }), { status: 200 });
+      return response(
+        url.endsWith('/estimation-scales/public')
+          ? [{ id: 'default', name: 'Thunderdome Default', defaultScale: true, values: deck }]
+          : [],
+      );
+    });
+    render(CreatePokerGame, { notifications, router: { route }, xfetch, scope, apiPrefix });
+    await expect.poll(visibleCards).toEqual(deck);
+    await page.getByRole('textbox', { name: 'Game Name', exact: true }).fill('New planning');
+    await page.getByRole('button', { name: 'Create Game', exact: true }).click();
+    await expect.poll(() => route.mock.calls).toEqual([['/game/new-game']]);
+    expect(xfetch.mock.calls.filter(([, config]) => config?.body)).toHaveLength(1);
+    expect(xfetch.mock.calls.some(([url]) => url.includes('jira-writeback'))).toBe(false);
+    expect(notifications.danger).not.toHaveBeenCalled();
+    if (meta.jiraWritebackEnabled) {
+      expect(notifications.success).toHaveBeenCalledWith(
+        'Jira Story Points writeback is enabled. Points are written only after you click Save.',
+      );
+    } else if (meta.jiraWritebackWarning) {
+      expect(notifications.warning).toHaveBeenCalledWith(meta.jiraWritebackWarning);
+    } else {
+      expect(notifications.success).not.toHaveBeenCalled();
+      expect(notifications.warning).not.toHaveBeenCalled();
+    }
   });
 });

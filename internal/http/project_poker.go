@@ -48,13 +48,13 @@ func (s *Service) handleGetProjectPokerGames() http.HandlerFunc {
 // handleCreateProjectPokerGame creates a new poker game associated with a specific project
 //
 //	@Summary		Create Project Poker
-//	@Description	Create a new poker game associated with a specific project
+//	@Description	Create a new poker game associated with a specific project. A unique creator-owned Jira connection and Story Points numeric field automatically enable writeback after Save. Optional initialization problems are returned in meta.jiraWritebackWarning without failing creation.
 //	@Tags			projects,poker
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectId	path	string				true	"the project ID to associate the poker game with"
 //	@Param			body		body	battleRequestBody	true	"The poker game request body"
-//	@Success		200			object	standardJsonResponse{data=thunderdome.Poker}
+//	@Success		200			object	standardJsonResponse{data=thunderdome.Poker,meta=pokerCreationMeta}
 //	@Failure		400			object	standardJsonResponse{}
 //	@Failure		403			object	standardJsonResponse{}
 //	@Failure		500			object	standardJsonResponse{}
@@ -151,7 +151,8 @@ func (s *Service) handleCreateProjectPokerGame() http.HandlerFunc {
 			}
 		}
 
-		s.Success(w, r, http.StatusOK, newGame, nil)
+		meta := s.initializePokerJiraWriteback(r, newGame.ID, sessionUserID)
+		s.Success(w, r, http.StatusOK, newGame, meta)
 	}
 }
 

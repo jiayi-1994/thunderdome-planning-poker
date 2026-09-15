@@ -72,7 +72,7 @@ type battleRequestBody struct {
 // handlePokerCreate handles creating a poker game
 //
 //	@Summary		Create Poker Game
-//	@Description	Create a poker game associated to the user
+//	@Description	Create a poker game associated to the user. A unique creator-owned Jira connection and Story Points numeric field automatically enable writeback after Save. Optional initialization problems are returned in meta.jiraWritebackWarning without failing creation.
 //	@Tags			poker
 //	@Produce		json
 //	@Param			userId			path	string				true	"the user ID"
@@ -80,7 +80,7 @@ type battleRequestBody struct {
 //	@Param			departmentId	path	string				false	"the department ID"
 //	@Param			teamId			path	string				false	"the team ID"
 //	@Param			battle			body	battleRequestBody	false	"new poker game object"
-//	@Success		200				object	standardJsonResponse{data=thunderdome.Poker}
+//	@Success		200				object	standardJsonResponse{data=thunderdome.Poker,meta=pokerCreationMeta}
 //	@Failure		403				object	standardJsonResponse{}
 //	@Failure		500				object	standardJsonResponse{}
 //	@Security		ApiKeyAuth
@@ -208,7 +208,8 @@ func (s *Service) handlePokerCreate() http.HandlerFunc {
 			}
 		}
 
-		s.Success(w, r, http.StatusOK, newGame, nil)
+		meta := s.initializePokerJiraWriteback(r, newGame.ID, userID)
+		s.Success(w, r, http.StatusOK, newGame, meta)
 	}
 }
 

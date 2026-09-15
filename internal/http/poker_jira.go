@@ -118,10 +118,10 @@ func (s *Service) handlePokerJiraFields() http.HandlerFunc {
 	}
 }
 
-// handleSavePokerJiraSettings enables or disables automatic point writeback after voting ends.
+// handleSavePokerJiraSettings enables or disables point writeback after the facilitator saves a result.
 //
 // @Summary Configure automatic Jira point writeback
-// @Description Facilitators can authorize their own Jira connection for future voting completions. The selected field must be numeric.
+// @Description Facilitators can authorize their own Jira connection for future saved estimates. Only clicking Save queues a write; voting completion alone never writes. The selected field must be numeric.
 // @Tags poker, jira
 // @Accept json
 // @Produce json

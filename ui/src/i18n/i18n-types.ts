@@ -3298,6 +3298,10 @@ type RootTranslation = {
 	 * F​a​i​l​e​d​ ​t​o​ ​g​e​t​ ​e​s​t​i​m​a​t​i​o​n​ ​s​c​a​l​e​s
 	 */
 	getEstimationScalesError: string
+	/**
+	 * J​i​r​a​ ​S​t​o​r​y​ ​P​o​i​n​t​s​ ​w​r​i​t​e​b​a​c​k​ ​i​s​ ​e​n​a​b​l​e​d​.​ ​P​o​i​n​t​s​ ​a​r​e​ ​w​r​i​t​t​e​n​ ​o​n​l​y​ ​a​f​t​e​r​ ​y​o​u​ ​c​l​i​c​k​ ​S​a​v​e​.
+	 */
+	jiraWritebackAutoEnabled: string
 }
 
 export type TranslationFunctions = {
@@ -6531,6 +6535,10 @@ export type TranslationFunctions = {
 	 * Failed to get estimation scales
 	 */
 	getEstimationScalesError: () => LocalizedString
+	/**
+	 * Jira Story Points writeback is enabled. Points are written only after you click Save.
+	 */
+	jiraWritebackAutoEnabled: () => LocalizedString
 }
 
 export type Formatters = {}

@@ -38,7 +38,7 @@ func (s *Service) FindInstancesByUserID(ctx context.Context, userID string) ([]t
 		instances = append(instances, instance)
 	}
 
-	return instances, nil
+	return instances, rows.Err()
 }
 
 // GetInstanceByID returns a JiraInstance for a given instance ID.

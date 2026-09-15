@@ -398,6 +398,13 @@ definitions:
       type:
         type: string
     type: object
+  http.pokerCreationMeta:
+    properties:
+      jiraWritebackEnabled:
+        type: boolean
+      jiraWritebackWarning:
+        type: string
+    type: object
   http.pokerJiraConfigurationResponse:
     properties:
       instances:
@@ -2257,7 +2264,10 @@ info:
 paths:
   /{orgId}/departments/{departmentId}/teams/{teamId}/users/{userId}/battles:
     post:
-      description: Create a poker game associated to the user
+      description: Create a poker game associated to the user. A unique creator-owned
+        Jira connection and Story Points numeric field automatically enable writeback
+        after Save. Optional initialization problems are returned in meta.jiraWritebackWarning
+        without failing creation.
       parameters:
       - description: the user ID
         in: path
@@ -2292,6 +2302,8 @@ paths:
             - properties:
                 data:
                   $ref: '#/definitions/thunderdome.Poker'
+                meta:
+                  $ref: '#/definitions/http.pokerCreationMeta'
               type: object
         "403":
           description: Forbidden
@@ -2410,7 +2422,10 @@ paths:
       - storyboard
   /{orgId}/teams/{teamId}/users/{userId}/battles:
     post:
-      description: Create a poker game associated to the user
+      description: Create a poker game associated to the user. A unique creator-owned
+        Jira connection and Story Points numeric field automatically enable writeback
+        after Save. Optional initialization problems are returned in meta.jiraWritebackWarning
+        without failing creation.
       parameters:
       - description: the user ID
         in: path
@@ -2441,6 +2456,8 @@ paths:
             - properties:
                 data:
                   $ref: '#/definitions/thunderdome.Poker'
+                meta:
+                  $ref: '#/definitions/http.pokerCreationMeta'
               type: object
         "403":
           description: Forbidden
@@ -4478,7 +4495,8 @@ paths:
       consumes:
       - application/json
       description: Facilitators can authorize their own Jira connection for future
-        voting completions. The selected field must be numeric.
+        saved estimates. Only clicking Save queues a write; voting completion alone
+        never writes. The selected field must be numeric.
       parameters:
       - description: Poker game ID
         in: path
@@ -7505,7 +7523,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new poker game associated with a specific project
+      description: Create a new poker game associated with a specific project. A unique
+        creator-owned Jira connection and Story Points numeric field automatically
+        enable writeback after Save. Optional initialization problems are returned
+        in meta.jiraWritebackWarning without failing creation.
       parameters:
       - description: the project ID to associate the poker game with
         in: path
@@ -7529,6 +7550,8 @@ paths:
             - properties:
                 data:
                   $ref: '#/definitions/thunderdome.Poker'
+                meta:
+                  $ref: '#/definitions/http.pokerCreationMeta'
               type: object
         "400":
           description: Bad Request
@@ -10731,7 +10754,10 @@ paths:
       - team
   /teams/{teamId}/users/{userId}/battles:
     post:
-      description: Create a poker game associated to the user
+      description: Create a poker game associated to the user. A unique creator-owned
+        Jira connection and Story Points numeric field automatically enable writeback
+        after Save. Optional initialization problems are returned in meta.jiraWritebackWarning
+        without failing creation.
       parameters:
       - description: the user ID
         in: path
@@ -10758,6 +10784,8 @@ paths:
             - properties:
                 data:
                   $ref: '#/definitions/thunderdome.Poker'
+                meta:
+                  $ref: '#/definitions/http.pokerCreationMeta'
               type: object
         "403":
           description: Forbidden
@@ -11241,7 +11269,10 @@ paths:
       tags:
       - poker
     post:
-      description: Create a poker game associated to the user
+      description: Create a poker game associated to the user. A unique creator-owned
+        Jira connection and Story Points numeric field automatically enable writeback
+        after Save. Optional initialization problems are returned in meta.jiraWritebackWarning
+        without failing creation.
       parameters:
       - description: the user ID
         in: path
@@ -11264,6 +11295,8 @@ paths:
             - properties:
                 data:
                   $ref: '#/definitions/thunderdome.Poker'
+                meta:
+                  $ref: '#/definitions/http.pokerCreationMeta'
               type: object
         "403":
           description: Forbidden

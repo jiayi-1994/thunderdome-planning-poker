@@ -838,6 +838,7 @@ const en = {
   themeAuto: 'System',
   selectPointsError: 'Must select an estimation scale and allowed point values.',
   getEstimationScalesError: 'Failed to get estimation scales',
+  jiraWritebackAutoEnabled: 'Jira Story Points writeback is enabled. Points are written only after you click Save.',
 } satisfies BaseTranslation;
 
 export default en;
