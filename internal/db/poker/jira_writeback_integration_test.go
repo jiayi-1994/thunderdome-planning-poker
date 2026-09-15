@@ -157,7 +157,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 
 	t.Run("old round is cancelled before a new round", func(t *testing.T) {
 		start()
-		vote(one, "testing", "13")
+		vote(one, "testing", "8")
 		end()
 		start()
 		if event := process(); event != nil {
@@ -182,7 +182,8 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		}
 		count := len(written)
 		start()
-		vote(one, "testing", "?")
+		// Historical abstentions must still be handled safely after removing the card.
+		exec(`UPDATE thunderdome.poker_story SET votes = jsonb_build_array(jsonb_build_object('warriorId', $2::text, 'category', 'testing', 'vote', '?')) WHERE id = $1`, story, one)
 		end()
 		if event := process(); event == nil || event.Sync.Status != "skipped" || len(written) != count {
 			t.Fatal("abstention overwrote Jira")
@@ -238,7 +239,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 
 	t.Run("disabled settings cancel pending work", func(t *testing.T) {
 		start()
-		vote(one, "testing", "13")
+		vote(one, "testing", "8")
 		end()
 		settings.Enabled = false
 		if err := jira.SavePokerJiraSettings(ctx, game, one, settings); err != nil {
@@ -273,7 +274,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		exec(`INSERT INTO thunderdome.poker_story(id, poker_id, active) VALUES ($1, $2, false)`, nextStory, game)
 		exec(`UPDATE thunderdome.poker_story SET link = $2 WHERE id = $1`, story, server.URL+"/browse/TEST-1")
 		start()
-		vote(one, "testing", "13")
+		vote(one, "testing", "8")
 		if _, err := poker.ActivateStoryVoting(game, nextStory); err != nil {
 			t.Fatal(err)
 		}

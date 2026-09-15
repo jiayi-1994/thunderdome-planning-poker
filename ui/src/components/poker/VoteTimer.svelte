@@ -51,6 +51,6 @@
     {String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}
   </div>
   <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
-    {remaining === 0 ? '时间到，正在汇总评分…' : '默认 2 分钟，到时自动揭晓'}
+    {remaining === 0 ? '时间到，正在汇总评分…' : '到时自动揭晓；时长可在 Game Settings 中设置'}
   </p>
 {/if}

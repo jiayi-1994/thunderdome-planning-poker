@@ -161,14 +161,15 @@ func (s *Service) StoryVoteEnd(ctx context.Context, pokerID string, userID strin
 // Revise handles editing the poker game settings
 func (s *Service) Revise(ctx context.Context, pokerID string, userID string, eventValue string) (any, []byte, error, bool) {
 	var rb struct {
-		BattleName           string   `json:"battleName"`
-		PointValuesAllowed   []string `json:"pointValuesAllowed"`
-		AutoFinishVoting     bool     `json:"autoFinishVoting"`
-		PointAverageRounding string   `json:"pointAverageRounding"`
-		HideVoterIdentity    bool     `json:"hideVoterIdentity"`
-		JoinCode             string   `json:"joinCode"`
-		LeaderCode           string   `json:"leaderCode"`
-		TeamID               string   `json:"teamId"`
+		BattleName            string   `json:"battleName"`
+		PointValuesAllowed    []string `json:"pointValuesAllowed"`
+		AutoFinishVoting      bool     `json:"autoFinishVoting"`
+		VotingDurationSeconds *int     `json:"votingDurationSeconds,omitempty"`
+		PointAverageRounding  string   `json:"pointAverageRounding"`
+		HideVoterIdentity     bool     `json:"hideVoterIdentity"`
+		JoinCode              string   `json:"joinCode"`
+		LeaderCode            string   `json:"leaderCode"`
+		TeamID                string   `json:"teamId"`
 	}
 	err := json.Unmarshal([]byte(eventValue), &rb)
 	if err != nil {
@@ -185,6 +186,7 @@ func (s *Service) Revise(ctx context.Context, pokerID string, userID string, eve
 		rb.JoinCode,
 		rb.LeaderCode,
 		rb.TeamID,
+		rb.VotingDurationSeconds,
 	)
 	if err != nil {
 		return nil, nil, err, false

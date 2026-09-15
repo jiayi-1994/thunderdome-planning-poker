@@ -284,6 +284,8 @@ definitions:
     properties:
       access_token:
         type: string
+      auth_method:
+        type: string
       client_mail:
         type: string
       host:
@@ -293,7 +295,6 @@ definitions:
         type: boolean
     required:
     - access_token
-    - client_mail
     - host
     type: object
   http.jiraStoryJQLSearchRequestBody:
@@ -1250,9 +1251,19 @@ definitions:
           type: string
         type: array
     type: object
+  thunderdome.JiraConnectionStatus:
+    properties:
+      connected:
+        type: boolean
+      display_name:
+        type: string
+    type: object
   thunderdome.JiraInstance:
     properties:
       access_token:
+        type: string
+      auth_method:
+        description: Empty preserves legacy Cloud basic / Data Center PAT authentication.
         type: string
       client_mail:
         type: string
@@ -1382,6 +1393,8 @@ definitions:
         items:
           $ref: '#/definitions/thunderdome.PokerUser'
         type: array
+      votingDurationSeconds:
+        type: integer
       votingLocked:
         type: boolean
     type: object
@@ -11682,6 +11695,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Query Jira for Stories by JQL
+      tags:
+      - jira
+  /users/{userId}/jira-instances/{instanceId}/test:
+    post:
+      description: Validate the saved Jira credentials with the current-user API
+      parameters:
+      - description: the user ID owning the Jira instance
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: the Jira instance ID
+        in: path
+        name: instanceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.standardJsonResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/thunderdome.JiraConnectionStatus'
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Test Jira connection
       tags:
       - jira
   /users/{userId}/organizations:

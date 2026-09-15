@@ -156,7 +156,8 @@ You can create a game to determine the size of a story, or join one in progress.
 
 - Name
 - Team (optional)
-- Point Range Allowed, default: [ 1, 2, 3, 5, 8, 13, ? ]
+- Point Range Allowed: [ 0, 1/2, 1, 2, 3, 5, 8 ]. Higher values and abstention/coffee cards are no longer offered. Historical results and calculated totals are retained.
+- Voting countdown: defaults to 2 minutes. A facilitator can set 1–60 whole minutes in **Game Settings**. Changes apply when the next round starts; an active round retains its deadline, including after reload or reconnect.
 - Stories  
   Upload an XML or CSV for stories, or add manually. See note in Stories.
 - Point Average Rounding, default: Ceil  
@@ -196,7 +197,7 @@ Premium feature.
 3. Enable automatic writeback and choose your Jira connection. The site's **Story Points** field is selected automatically when it has a unique match; an existing valid field selection is preserved. The account must be allowed to edit that field on the target issues. If Story Points is missing or ambiguous, check the Jira field configuration or select the intended numeric field before saving.
 4. Import stories from Jira, or fill in each story's Jira reference ID and matching issue link. For example, `PROJ-123` and `https://yourjira.atlassian.net/browse/PROJ-123`.
 
-When the two-minute countdown ends, a facilitator finishes voting, or auto-finish ends the round, the server writes the sum of the testing, frontend, and backend averages. Only numeric votes count toward each average; nonvoters and abstentions do not count. Zero is a valid estimate. A round with no numeric votes does not overwrite Jira. Legacy single-category voting writes after the facilitator saves its final numeric estimate.
+When the configured countdown ends, a facilitator finishes voting, or auto-finish ends the round, the server writes the sum of the testing, frontend, and backend averages. Only numeric votes count toward each average; nonvoters and historical abstentions do not count. Zero is a valid estimate. Calculated totals can exceed the highest individual card. A round with no numeric votes does not overwrite Jira. Legacy single-category voting writes after the facilitator saves its final numeric estimate.
 
 The result area shows pending, successful, or failed writeback. The server retries failed requests up to three total attempts, including after a restart. A facilitator can use **重试回写** after fixing account permissions or connection details. The local estimate remains available when Jira is unreachable. Reopening a voting round discards its previous pending task; changing the destination or disabling writeback cancels affected pending tasks. Enabling this feature does not send historical estimates.
 

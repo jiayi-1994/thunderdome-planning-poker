@@ -359,7 +359,7 @@ type PokerDataSvc interface {
 	// TeamCreateGame creates a new poker game for a team
 	TeamCreateGame(ctx context.Context, teamID string, facilitatorID string, name string, estimationScaleID string, pointValuesAllowed []string, stories []*thunderdome.Story, autoFinishVoting bool, pointAverageRounding string, joinCode string, facilitatorCode string, hideVoterIdentity bool) (*thunderdome.Poker, error)
 	// UpdateGame updates an existing poker game
-	UpdateGame(pokerID string, name string, pointValuesAllowed []string, autoFinishVoting bool, pointAverageRounding string, hideVoterIdentity bool, joinCode string, facilitatorCode string, teamID string) error
+	UpdateGame(pokerID string, name string, pointValuesAllowed []string, autoFinishVoting bool, pointAverageRounding string, hideVoterIdentity bool, joinCode string, facilitatorCode string, teamID string, votingDurationSeconds *int) error
 	// GetFacilitatorCode retrieves the facilitator code for a poker game
 	GetFacilitatorCode(pokerID string) (string, error)
 	// GetGameByID retrieves a poker game by its ID

@@ -29,27 +29,28 @@ type PokerUser struct {
 
 // Poker aka arena
 type Poker struct {
-	ID                   string           `json:"id"`
-	Name                 string           `json:"name"`
-	Users                []*PokerUser     `json:"users"`
-	Stories              []*Story         `json:"plans"`
-	VotingLocked         bool             `json:"votingLocked"`
-	ActiveStoryID        string           `json:"activePlanId"`
-	PointValuesAllowed   []string         `json:"pointValuesAllowed"`
-	AutoFinishVoting     bool             `json:"autoFinishVoting"`
-	Facilitators         []string         `json:"leaders"`
-	PointAverageRounding string           `json:"pointAverageRounding"`
-	HideVoterIdentity    bool             `json:"hideVoterIdentity"`
-	JoinCode             string           `json:"joinCode"`
-	FacilitatorCode      string           `json:"leaderCode,omitempty"`
-	TeamID               string           `json:"teamId"`
-	TeamName             string           `json:"teamName"`
-	EstimationScaleID    string           `json:"estimationScaleId"`
-	EstimationScale      *EstimationScale `json:"estimationScale,omitempty"`
-	EndTime              *time.Time       `json:"endTime"`
-	EndReason            *string          `json:"endReason,omitempty"`
-	CreatedDate          time.Time        `json:"createdDate"`
-	UpdatedDate          time.Time        `json:"updatedDate"`
+	ID                    string           `json:"id"`
+	Name                  string           `json:"name"`
+	Users                 []*PokerUser     `json:"users"`
+	Stories               []*Story         `json:"plans"`
+	VotingLocked          bool             `json:"votingLocked"`
+	ActiveStoryID         string           `json:"activePlanId"`
+	PointValuesAllowed    []string         `json:"pointValuesAllowed"`
+	AutoFinishVoting      bool             `json:"autoFinishVoting"`
+	VotingDurationSeconds int              `json:"votingDurationSeconds"`
+	Facilitators          []string         `json:"leaders"`
+	PointAverageRounding  string           `json:"pointAverageRounding"`
+	HideVoterIdentity     bool             `json:"hideVoterIdentity"`
+	JoinCode              string           `json:"joinCode"`
+	FacilitatorCode       string           `json:"leaderCode,omitempty"`
+	TeamID                string           `json:"teamId"`
+	TeamName              string           `json:"teamName"`
+	EstimationScaleID     string           `json:"estimationScaleId"`
+	EstimationScale       *EstimationScale `json:"estimationScale,omitempty"`
+	EndTime               *time.Time       `json:"endTime"`
+	EndReason             *string          `json:"endReason,omitempty"`
+	CreatedDate           time.Time        `json:"createdDate"`
+	UpdatedDate           time.Time        `json:"updatedDate"`
 }
 
 // Vote structure

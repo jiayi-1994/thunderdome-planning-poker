@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/StevenWeathers/thunderdome-planning-poker/thunderdome"
 
@@ -24,7 +25,8 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 			 FROM thunderdome.poker_jira_sync j WHERE j.story_id = poker_story.id
 			 AND j.vote_start_time = poker_story.votestart_time AND NOT poker_story.active) AS jira_sync,
 			(SELECT j.participants FROM thunderdome.poker_jira_sync j WHERE j.story_id = poker_story.id
-			 AND j.vote_start_time = poker_story.votestart_time AND NOT poker_story.active) AS voting_participants
+			 AND j.vote_start_time = poker_story.votestart_time AND NOT poker_story.active) AS voting_participants,
+			voting_duration_seconds
 			FROM thunderdome.poker_story WHERE poker_id = $1 ORDER BY position
 		`,
 		pokerID,
@@ -32,6 +34,7 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 	if storiesErr == nil {
 		defer storyRows.Close()
 		for storyRows.Next() {
+			var votingDurationSeconds int
 			var v string
 			var estimation []byte
 			var jiraSync []byte
@@ -47,7 +50,7 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 			}
 			if err := storyRows.Scan(
 				&p.ID, &p.Name, &p.Type, &referenceID, &link, &description, &acceptanceCriteria, &p.Priority,
-				&p.Points, &p.Active, &p.Skipped, &p.VoteStartTime, &p.VoteEndTime, &v, &estimation, &p.Position, &jiraSync, &votingParticipants,
+				&p.Points, &p.Active, &p.Skipped, &p.VoteStartTime, &p.VoteEndTime, &v, &estimation, &p.Position, &jiraSync, &votingParticipants, &votingDurationSeconds,
 			); err != nil {
 				d.Logger.Error("get poker stories query error", zap.Error(err),
 					zap.String("PokerID", pokerID), zap.String("UserID", userID))
@@ -57,7 +60,7 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 						d.Logger.Error("decode poker Jira sync", zap.Error(err))
 					}
 				}
-				p.VoteDeadline = p.VoteStartTime.Add(thunderdome.PokerVotingDuration)
+				p.VoteDeadline = p.VoteStartTime.Add(time.Duration(votingDurationSeconds) * time.Second)
 				p.ReferenceID = referenceID.String
 				p.Link = link.String
 				p.Description = description.String
@@ -144,12 +147,12 @@ func (d *Service) ActivateStoryVoting(pokerID string, storyID string) ([]*thunde
 
 // SetVote sets a users vote for the story
 func (d *Service) SetVote(pokerID string, userID string, storyID string, voteValue string, category string) ([]*thunderdome.Story, bool, error) {
+	if !thunderdome.ValidPokerPointValue(voteValue) {
+		return nil, false, fmt.Errorf("请选择 0、1/2、1、2、3、5 或 8 分")
+	}
 	if category != "" {
 		if !thunderdome.ValidPokerCategory(category) {
 			return nil, false, fmt.Errorf("invalid vote category")
-		}
-		if _, valid := thunderdome.NumericPokerVote(voteValue); !valid && voteValue != "?" && voteValue != "☕️" {
-			return nil, false, fmt.Errorf("category votes must be non-negative numbers or abstentions")
 		}
 	}
 	var rawVotes []byte
@@ -163,10 +166,11 @@ func (d *Service) SetVote(pokerID string, userID string, storyID string, voteVal
 		FROM thunderdome.poker p
 		WHERE s.id = $1 AND s.poker_id = $5 AND p.id = s.poker_id
 		AND s.active AND NOT p.voting_locked AND p.active_story_id = s.id AND p.end_time IS NULL
-		AND s.votestart_time + ($6::double precision * interval '1 second') > clock_timestamp()
+		AND s.votestart_time + (s.voting_duration_seconds * interval '1 second') > clock_timestamp()
+		AND $3 = ANY(p.point_values_allowed)
 		AND EXISTS (SELECT 1 FROM thunderdome.poker_user u
 			WHERE u.poker_id = p.id AND u.user_id::text = $2 AND NOT u.spectator)
-		RETURNING s.votes`, storyID, userID, voteValue, category, pokerID, thunderdome.PokerVotingDuration.Seconds()).Scan(&rawVotes)
+		RETURNING s.votes`, storyID, userID, voteValue, category, pokerID).Scan(&rawVotes)
 	if err != nil {
 		return nil, false, fmt.Errorf("set poker vote: %w", err)
 	}
@@ -191,9 +195,9 @@ func (d *Service) RetractVote(pokerID string, userID string, storyID string, cat
 		FROM thunderdome.poker p
 		WHERE s.id = $1 AND s.poker_id = $4 AND p.id = s.poker_id
 		AND s.active AND NOT p.voting_locked AND p.active_story_id = s.id AND p.end_time IS NULL
-		AND s.votestart_time + ($5::double precision * interval '1 second') > clock_timestamp()
+		AND s.votestart_time + (s.voting_duration_seconds * interval '1 second') > clock_timestamp()
 		AND EXISTS (SELECT 1 FROM thunderdome.poker_user u
-			WHERE u.poker_id = p.id AND u.user_id::text = $2 AND NOT u.spectator)`, storyID, userID, category, pokerID, thunderdome.PokerVotingDuration.Seconds())
+			WHERE u.poker_id = p.id AND u.user_id::text = $2 AND NOT u.spectator)`, storyID, userID, category, pokerID)
 	if err != nil {
 		return nil, fmt.Errorf("retract poker vote: %w", err)
 	}

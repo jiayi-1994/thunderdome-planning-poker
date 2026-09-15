@@ -12,6 +12,7 @@
   import ImportModal from './ImportModal.svelte';
   import SelectWithSubtext from '../forms/SelectWithSubtext.svelte';
   import { validateUserIsAdmin } from '../../validationUtils';
+  import { availablePokerPoints } from './pointValues';
   import { Crown, Lock } from '@lucide/svelte';
 
   import type { NotificationService } from '../../types/notifications';
@@ -29,8 +30,8 @@
 
   const allowedPointAverages = ['ceil', 'round', 'floor'];
 
-  let allowedPointValues = $state([]);
-  let points = $state([]);
+  let allowedPointValues = $state<string[]>([]);
+  let points = $state<string[]>([]);
   let plans = $state([]);
   let teams = $state([]);
   let publicEstimationScales = [];
@@ -103,6 +104,10 @@
     const pointValuesAllowed = allowedPointValues.filter(pv => {
       return points.includes(pv);
     });
+    if (pointValuesAllowed.length === 0) {
+      notifications.danger('请至少选择一种分值');
+      return;
+    }
 
     const body = {
       name: pokerSettings.battleName,
@@ -204,13 +209,14 @@
   const combineEstimationScales = () => {
     // scales priority order (Team -> Organization -> Public)
     let defaultFound = false;
-    estimateScales = [...teamEstimationScales, ...organizationEstimationScales, ...publicEstimationScales];
+    estimateScales = [...teamEstimationScales, ...organizationEstimationScales, ...publicEstimationScales]
+      .filter(scale => availablePokerPoints(scale.values).length > 0);
 
     estimateScales.map(scale => {
       // Find default scale with priority order (Team -> Organization -> Public)
       if (!defaultFound && scale.defaultScale) {
-        allowedPointValues = scale.values;
-        points = scale.values;
+        allowedPointValues = availablePokerPoints(scale.values);
+        points = [...allowedPointValues];
         selectedEstimationScale = scale.id;
         defaultFound = true;
       }
@@ -291,8 +297,8 @@
   const updatePointValues = (event: CustomEvent) => {
     const scale = event.detail;
     selectedEstimationScale = scale.id;
-    allowedPointValues = scale.values;
-    points = scale.values;
+    allowedPointValues = availablePokerPoints(scale.values);
+    points = [...allowedPointValues];
   };
 
   let showImport = $state(false);

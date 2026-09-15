@@ -112,7 +112,7 @@ func (s *Service) handleCreateProjectPokerGame() http.HandlerFunc {
 
 		// verify that the point values allowed are in the estimation scale
 		for _, point := range b.PointValuesAllowed {
-			if !slices.Contains(scale.Values, point) {
+			if !thunderdome.ValidPokerPointValue(point) || !slices.Contains(scale.Values, point) {
 				s.Failure(w, r, http.StatusBadRequest, Errorf(EINVALID, "POINT_VALUES_NOT_IN_SCALE"))
 				return
 			}

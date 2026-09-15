@@ -9,17 +9,30 @@ on:
       - 'internal/db/jira/**'
       - 'internal/db/migrations/**'
       - 'internal/db/poker/*test.go'
+      - 'internal/db/poker/*.go'
+      - 'internal/http/poker/**'
+      - 'internal/http/poker.go'
+      - 'internal/http/project_poker.go'
+      - 'internal/config/**'
       - 'internal/http/jira*'
       - 'internal/http/types.go'
       - 'internal/http/http.go'
       - 'thunderdome/jira.go'
+      - 'thunderdome/poker*.go'
       - 'ui/src/components/jira/**'
       - 'ui/src/components/poker/JiraWriteback*'
       - 'ui/src/components/poker/jiraWriteback*'
+      - 'ui/src/components/poker/PokerSettings.test.ts'
+      - 'ui/src/components/poker/*PokerGame.svelte'
+      - 'ui/src/components/poker/VoteTimer*'
+      - 'ui/src/components/poker/pointValues.ts'
+      - 'ui/src/pages/poker/PokerGame.svelte'
+      - 'ui/src/types/poker.ts'
       - 'ui/src/pages/user/UserProfile.svelte'
       - 'go.mod'
       - 'go.sum'
       - 'ui/package*.json'
+      - 'ui/vitest.config.ts'
   workflow_dispatch:
 
 permissions:
@@ -63,5 +76,5 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          npx vitest run src/components/jira/ src/components/poker/JiraWriteback.test.ts
+          npx vitest run src/components/jira/ src/components/poker/JiraWriteback.test.ts src/components/poker/PokerSettings.test.ts src/components/poker/VoteTimer.test.ts
           npm run build

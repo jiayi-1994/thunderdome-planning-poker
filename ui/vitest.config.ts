@@ -4,6 +4,7 @@ import { playwright } from '@vitest/browser-playwright';
 import path from 'path';
 
 export default defineConfig({
+  optimizeDeps: { include: ['he'] },
   plugins: [
     svelte({
       hot: !process.env.VITEST,

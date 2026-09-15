@@ -14920,6 +14920,65 @@ const docTemplate = `{
                 ]
             }
         },
+        "/users/{userId}/jira-instances/{instanceId}/test": {
+            "post": {
+                "description": "Validate the saved Jira credentials with the current-user API",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jira"
+                ],
+                "summary": "Test Jira connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID owning the Jira instance",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "the Jira instance ID",
+                        "name": "instanceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.standardJsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/thunderdome.JiraConnectionStatus"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/users/{userId}/organizations": {
             "get": {
                 "description": "Get list of organizations for the authenticated user",
@@ -16723,11 +16782,13 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "access_token",
-                "client_mail",
                 "host"
             ],
             "properties": {
                 "access_token": {
+                    "type": "string"
+                },
+                "auth_method": {
                     "type": "string"
                 },
                 "client_mail": {
@@ -18153,10 +18214,25 @@ const docTemplate = `{
                 }
             }
         },
+        "thunderdome.JiraConnectionStatus": {
+            "type": "object",
+            "properties": {
+                "connected": {
+                    "type": "boolean"
+                },
+                "display_name": {
+                    "type": "string"
+                }
+            }
+        },
         "thunderdome.JiraInstance": {
             "type": "object",
             "properties": {
                 "access_token": {
+                    "type": "string"
+                },
+                "auth_method": {
+                    "description": "Empty preserves legacy Cloud basic / Data Center PAT authentication.",
                     "type": "string"
                 },
                 "client_mail": {
@@ -18352,6 +18428,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/thunderdome.PokerUser"
                     }
+                },
+                "votingDurationSeconds": {
+                    "type": "integer"
                 },
                 "votingLocked": {
                     "type": "boolean"

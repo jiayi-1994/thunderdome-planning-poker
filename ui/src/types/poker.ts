@@ -1,6 +1,7 @@
 export type PokerGame = {
   activePlanId?: string;
   autoFinishVoting: boolean;
+  votingDurationSeconds?: number;
   createdDate: Date;
   hideVoterIdentity: boolean;
   id: string;

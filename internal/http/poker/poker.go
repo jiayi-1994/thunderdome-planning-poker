@@ -26,11 +26,11 @@ type Config struct {
 }
 
 type PokerDataSvc interface {
-	// EndExpiredStoryVoting closes rounds whose two-minute voting window has elapsed.
+	// EndExpiredStoryVoting closes rounds whose configured voting window has elapsed.
 	EndExpiredStoryVoting(ctx context.Context) ([]*thunderdome.PokerVotingExpiration, error)
 	GetStories(pokerID string, userID string) []*thunderdome.Story
 	// UpdateGame updates an existing poker game
-	UpdateGame(pokerID string, name string, pointValuesAllowed []string, autoFinishVoting bool, pointAverageRounding string, hideVoterIdentity bool, joinCode string, facilitatorCode string, teamID string) error
+	UpdateGame(pokerID string, name string, pointValuesAllowed []string, autoFinishVoting bool, pointAverageRounding string, hideVoterIdentity bool, joinCode string, facilitatorCode string, teamID string, votingDurationSeconds *int) error
 	// GetFacilitatorCode retrieves the facilitator code for a poker game
 	GetFacilitatorCode(pokerID string) (string, error)
 	// GetGameByID retrieves a poker game by its ID

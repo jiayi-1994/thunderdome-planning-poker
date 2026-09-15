@@ -4,7 +4,8 @@
   import { AppConfig } from '../../config';
   import LL from '../../i18n/i18n-svelte';
   import { user } from '../../stores';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import { pokerPointValues } from './pointValues';
   import TextInput from '../forms/TextInput.svelte';
   import SelectInput from '../forms/SelectInput.svelte';
   import Checkbox from '../forms/Checkbox.svelte';
@@ -13,7 +14,7 @@
   import type { NotificationService } from '../../types/notifications';
   import type { ApiClient } from '../../types/apiclient';
 
-  const allowedPointValues = AppConfig.AllowedPointValues;
+  const allowedPointValues = pokerPointValues;
   const allowedPointAverages = ['ceil', 'round', 'floor'];
 
   interface Props {
@@ -23,6 +24,7 @@
     battleName?: string;
     votingLocked?: boolean;
     autoFinishVoting?: boolean;
+    votingDurationSeconds?: number;
     pointAverageRounding?: string;
     joinCode?: string;
     leaderCode?: string;
@@ -39,6 +41,7 @@
     battleName = $bindable(''),
     votingLocked = false,
     autoFinishVoting = $bindable(true),
+    votingDurationSeconds = 120,
     pointAverageRounding = $bindable('ceil'),
     joinCode = $bindable(''),
     leaderCode = $bindable(''),
@@ -53,6 +56,7 @@
   let uncheckedPointColor = 'border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-600 dark:text-gray-300';
 
   let teams = $state([]);
+  let votingMinutes = $state<number | undefined>(untrack(() => votingDurationSeconds / 60));
 
   function getTeams() {
     xfetch(`/api/users/${$user.id}/teams?limit=100`)
@@ -67,6 +71,10 @@
 
   function saveBattle(e: Event) {
     e.preventDefault();
+    if (votingMinutes === undefined || !Number.isInteger(votingMinutes) || votingMinutes < 1 || votingMinutes > 60) {
+      notifications.danger('倒计时请设置为 1 到 60 分钟的整数');
+      return;
+    }
 
     const pointValuesAllowed = allowedPointValues.filter((pv: string) => {
       return points.includes(pv);
@@ -76,6 +84,7 @@
       battleName,
       pointValuesAllowed,
       autoFinishVoting,
+      votingDurationSeconds: votingMinutes * 60,
       pointAverageRounding,
       hideVoterIdentity,
       joinCode,
@@ -156,6 +165,27 @@
           <ChevronDown class="inline-block" />
         </div>
       </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-gray-700 dark:text-gray-400 text-sm font-bold mb-2" for="votingMinutes">
+        每轮倒计时（分钟）
+      </label>
+      <input
+        id="votingMinutes"
+        name="votingMinutes"
+        type="number"
+        min="1"
+        max="60"
+        step="1"
+        required
+        bind:value={votingMinutes}
+        aria-describedby="votingMinutesHelp"
+        class="block w-full rounded border border-gray-300 p-2 bg-white text-gray-900 dark:bg-gray-900 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500"
+      />
+      <p id="votingMinutesHelp" class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+        默认 2 分钟，可设置 1–60 分钟。修改从下一轮生效，到时自动揭晓。
+      </p>
     </div>
 
     <div class="mb-4">

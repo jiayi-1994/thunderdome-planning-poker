@@ -58,9 +58,9 @@ app:
       - key: HTTP_READ_HEADER_TIMEOUT
         value: 2
       - key: CONFIG_POINTS_ALLOWED
-        value: "0, 1/2, 1, 2, 3, 5, 8, 13, 20, 21, 34, 40, 55, 100, ?, ☕️"
+        value: "0, 1/2, 1, 2, 3, 5, 8"
       - key: CONFIG_POINTS_DEFAULT
-        value: "1, 2, 3, 5, 8 , 13, ?"
+        value: "0, 1/2, 1, 2, 3, 5, 8"
       - key: CONFIG_SHOW_RANK
         value: false
       - key: CONFIG_AVATAR_SERVICE

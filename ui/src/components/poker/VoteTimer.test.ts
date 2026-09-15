@@ -5,7 +5,7 @@ import { tick } from 'svelte';
 import VoteTimer from './VoteTimer.svelte';
 import { expirationMatchesRound, remainingVotingSeconds } from './votingDeadline';
 
-describe('two-minute voting countdown', () => {
+describe('configurable voting countdown', () => {
   const startTime = new Date('2026-09-11T10:00:00Z');
 
   beforeEach(() => {
@@ -49,6 +49,22 @@ describe('two-minute voting countdown', () => {
     await expect.element(page.getByRole('timer')).toHaveTextContent('02:00');
     await rerender({ votingLocked: true });
     await expect.element(page.getByRole('timer')).not.toBeInTheDocument();
+  });
+
+  it('restores a five-minute round after two minutes and counts to its own deadline', async () => {
+    vi.setSystemTime(new Date(startTime.getTime() + 120000));
+    const onExpire = vi.fn();
+    render(VoteTimer, {
+      currentStoryId: 'story',
+      voteStartTime: startTime,
+      voteDeadline: new Date(startTime.getTime() + 300000),
+      votingLocked: false,
+      onExpire,
+    });
+    await expect.element(page.getByRole('timer')).toHaveTextContent('03:00');
+    await vi.advanceTimersByTimeAsync(180000);
+    await expect.element(page.getByRole('timer')).toHaveTextContent('00:00');
+    expect(onExpire).toHaveBeenCalledTimes(1);
   });
 
   it('never shows negative time and ignores expirations from previous rounds', () => {

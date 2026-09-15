@@ -23,6 +23,7 @@
   import VotingControls from '../../components/poker/VotingControls.svelte';
   import InviteUser from '../../components/poker/InviteUser.svelte';
   import VoteTimer from '../../components/poker/VoteTimer.svelte';
+  import { availablePokerPoints, pokerPointValues } from '../../components/poker/pointValues';
   import type { PokerGame, PokerStory, PokerVoteCategory, PokerVotingExpiration } from '../../types/poker';
   import { ExternalLink, Pencil, Settings, TimerOff, Trash } from '@lucide/svelte';
   import SubMenu from '../../components/global/SubMenu.svelte';
@@ -74,7 +75,7 @@
   let JoinPassRequired: boolean = $state(false);
   let socketError: boolean = $state(false);
   let socketReconnecting: boolean = $state(false);
-  let points: Array<string> = $state(['1', '2', '3', '5', '8', '13', '?']);
+  let points: Array<string> = $state([...pokerPointValues]);
   let categoryVotes = $state(emptyCategoryVotes());
   let selectedCategory: PokerVoteCategory | null = $state(null);
   let pokerGame: PokerGame = $state({
@@ -119,7 +120,7 @@
       case 'init': {
         JoinPassRequired = false;
         pokerGame = JSON.parse(parsedEvent.value);
-        points = pokerGame.pointValuesAllowed;
+        points = availablePokerPoints(pokerGame.pointValuesAllowed);
         const { spectator = false } = pokerGame.users.find((w) => w.id === $user.id) || {};
         isSpectator = spectator;
 
@@ -291,7 +292,11 @@
       case 'battle_revised':
         const revisedBattle = JSON.parse(parsedEvent.value);
         pokerGame.name = revisedBattle.battleName;
-        points = revisedBattle.pointValuesAllowed;
+        points = availablePokerPoints(revisedBattle.pointValuesAllowed);
+        pokerGame.pointValuesAllowed = points;
+        if (revisedBattle.votingDurationSeconds != null) {
+          pokerGame.votingDurationSeconds = revisedBattle.votingDurationSeconds;
+        }
         pokerGame.autoFinishVoting = revisedBattle.autoFinishVoting;
         pokerGame.pointAverageRounding = revisedBattle.pointAverageRounding;
         pokerGame.joinCode = revisedBattle.joinCode;
@@ -812,6 +817,7 @@
       {points}
       votingLocked={pokerGame.votingLocked}
       autoFinishVoting={pokerGame.autoFinishVoting}
+      votingDurationSeconds={pokerGame.votingDurationSeconds ?? 120}
       pointAverageRounding={pokerGame.pointAverageRounding}
       hideVoterIdentity={pokerGame.hideVoterIdentity}
       handleBattleEdit={handleGameEdit}
