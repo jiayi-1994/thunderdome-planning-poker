@@ -44,7 +44,7 @@
 
           <!-- App description or tagline could go here -->
           <p class="text-gray-600 dark:text-gray-400 text-center lg:text-start leading-relaxed">
-            Empowering teams with modern agile tools for better collaboration and delivery.
+            {$LL.appSubtitle()}
           </p>
 
           <!-- GitHub link with icon -->
@@ -71,7 +71,7 @@
             <ul class="grid grid-cols-2 lg:grid-cols-1 gap-3 text-center lg:text-start">
               {#if SubscriptionsEnabled}
                 <li>
-                  <a href={appRoutes.subscriptionPricing} class="{navLinkClasses} block py-1"> Pricing </a>
+                  <a href={appRoutes.subscriptionPricing} class="{navLinkClasses} block py-1"> {$LL.pricing()} </a>
                 </li>
               {/if}
               <li>

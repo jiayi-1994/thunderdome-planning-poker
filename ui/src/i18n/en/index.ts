@@ -1,6 +1,6 @@
 import type { BaseTranslation } from '../i18n-types';
 
-const en: BaseTranslation = {
+const en = {
   userGuide: 'User Guide',
   privacyPolicy: 'Privacy Policy',
   termsConditions: 'Terms & Conditions',
@@ -758,6 +758,86 @@ const en: BaseTranslation = {
   deleteSupportTicketSuccess: 'Support ticket deleted successfully',
   deleteSupportTicketError: 'Failed to delete support ticket',
   clear: 'Clear',
-};
+  dashboard: 'Dashboard',
+  pricing: 'Pricing',
+  estimationScale: 'Estimation Scale',
+  selectEstimationScale: 'Select an estimation scale...',
+  customPointValue: 'Custom',
+  customPointValuePlaceholder: 'enter a custom point value...',
+  saveSettings: 'Save Settings',
+  mainNavigation: 'main navigation',
+  landingSlogan1: 'Empower Your Agile Teams',
+  landingSlogan2: 'Release the Thunder in Your Agile Process',
+  landingSlogan3: 'Storm Through Your Teams Sprints',
+  landingSlogan4: 'Electrifying Your Agile Experience',
+  landingSlogan5: 'The Arena Where Agile Teams Excel',
+  landingSlogan6: 'Bringing the Energy Back to Agile',
+  landingSlogan7: 'Harness the Storm, Master the Sprint',
+  landingSlogan8: 'Amplify Your Teams Agile Potential',
+  landingIntro:
+    'Transform your agile ceremonies from time-wasters into team-builders. Get the tools that make planning poker, retrospectives, and story mapping actually work for remote and in-person teams.',
+  startPlanning: 'Start Planning',
+  getStartedFree: 'Get Started Free',
+  exploreFeatures: 'Explore Features',
+  landingPokerTitle: 'Planning Poker That Gets Consensus',
+  landingPokerDescription:
+    'Stop letting the loudest voice win your estimations. Get accurate story points from your whole team with bias-free voting.',
+  landingPokerBias: '<strong>Eliminate estimation bias:</strong> Anonymous voting prevents anchoring and groupthink',
+  landingPokerScales:
+    '<strong>Flexible scales:</strong> Use Fibonacci, T-shirt sizes, or create custom ranges that fit your workflow',
+  landingPokerRemote:
+    "<strong>Remote-first design:</strong> Equal participation whether you're in-person or distributed",
+  landingRetroTitle: 'Retrospectives That Drive Change',
+  landingRetroDescription:
+    'Move beyond the same old "what went well" discussions. Create psychological safety where real improvements happen.',
+  landingRetroFormats:
+    '<strong>Battle-tested formats:</strong> Start/Stop/Continue, 4Ls, Mad/Sad/Glad, plus custom templates',
+  landingRetroSafety:
+    '<strong>Safe space for honesty:</strong> Anonymous feedback removes fear of judgment or retaliation',
+  landingRetroActions:
+    '<strong>Accountability that works:</strong> Convert insights into trackable action items with follow-through',
+  landingStoryTitle: 'Story Maps That Tell the Real Story',
+  landingStoryDescription:
+    'Stop building features in isolation. Visualize the complete user journey and prioritize what actually matters to your users.',
+  landingStoryDrag:
+    '<strong>Intuitive drag-and-drop:</strong> Reorganize stories as easily as moving sticky notes across your map.',
+  landingStoryOrganization:
+    "<strong>Flexible story organization:</strong> Structure work with goals, columns, personas, and visual cues that fit your team's workflow.",
+  landingStoryDetails:
+    '<strong>Rich story details:</strong> Keep descriptions, acceptance criteria, and estimates together where the whole team can see them.',
+  landingCheckinTitle: 'Team Checkins',
+  landingCheckinDescription:
+    'Skip the status updates everyone already knows. Focus your daily standups on blockers, dependencies, and what actually needs team discussion.',
+  landingCheckinAlignment:
+    '<strong>Real-time team alignment:</strong> Live collaboration keeps distributed product teams in sync',
+  landingCheckinBlockers:
+    '<strong>Surface blockers fast:</strong> Highlight blockers and discussion items so the team can focus on what actually needs attention',
+  landingCheckinComments:
+    '<strong>Comment directly on checkins:</strong> Team members can add context, questions, and follow-up notes without derailing the standup',
+  landingWhyTitle: 'Why Choose Thunderdome?',
+  landingRemoteTitle: 'Built for Remote Teams',
+  landingRemoteDescription:
+    'Every feature works seamlessly whether your team is in the same room or spread across continents. No more "remote-friendly" compromises.',
+  landingSafetyTitle: 'Psychological Safety First',
+  landingSafetyDescription:
+    'Anonymous options, inclusive facilitation, and bias reduction tools help every team member contribute their best thinking.',
+  premiumCloudHosted: 'Premium cloud-hosted',
+  selfHosted: 'self-hosted',
+  hostingChoiceOr: 'convenience or',
+  hostingChoiceEnd: 'sovereignty. The choice is entirely yours.',
+  tryPlanningPoker: 'Try Planning Poker',
+  startRetrospective: 'Start a Retrospective',
+  tryRetrospectives: 'Try Retrospectives',
+  createStoryMap: 'Create Story Map',
+  tryStoryMapping: 'Try Story Mapping',
+  retroPreviewAlt: 'Sprint Retrospectives Preview',
+  storyboardPreviewAlt: 'Story Mapping Preview',
+  checkinsPreviewAlt: 'Team Checkins Preview',
+  themeLight: 'Light',
+  themeDark: 'Dark',
+  themeAuto: 'System',
+  selectPointsError: 'Must select an estimation scale and allowed point values.',
+  getEstimationScalesError: 'Failed to get estimation scales',
+} satisfies BaseTranslation;
 
 export default en;

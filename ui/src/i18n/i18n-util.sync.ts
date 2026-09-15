@@ -13,6 +13,7 @@ import fr from './fr'
 import it from './it'
 import pt from './pt'
 import ru from './ru'
+import zh from './zh'
 
 const localeTranslations = {
 	de,
@@ -23,6 +24,7 @@ const localeTranslations = {
 	it,
 	pt,
 	ru,
+	zh,
 }
 
 export const loadLocale = (locale: Locales): void => {

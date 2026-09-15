@@ -5,6 +5,7 @@
   import LL, { locale, setLocale } from '../../i18n/i18n-svelte';
   import type { Locales } from '../../i18n/i18n-types';
   import { loadLocaleAsync } from '../../i18n/i18n-util.async';
+  import { resolveLocale } from '../../i18n/locale';
   import ThemeSelector from './ThemeSelector.svelte';
   import NavUserMenu from './NavUserMenu.svelte';
   import { ArrowRight, Menu, X } from '@lucide/svelte';
@@ -67,7 +68,7 @@
         };
 
         user.create(newUser as SessionUser);
-        setupI18n(newUser.locale);
+        setupI18n(resolveLocale(newUser.locale, AppConfig.DefaultLocale));
         router.route(appRoutes.games, true);
       })
       .catch(function () {
@@ -95,7 +96,7 @@
 <header
   class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 shadow-sm relative z-50"
 >
-  <nav class="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8" aria-label="main navigation">
+  <nav class="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8" aria-label={$LL.mainNavigation()}>
     <div class="flex h-16 lg:h-20 items-center justify-between">
       <!-- Logo Section -->
       <div class="flex items-center">
@@ -113,7 +114,7 @@
       <div class="hidden lg:flex lg:items-center lg:space-x-1 font-rajdhani uppercase text-lg tracking-wide">
         {#if $user.name}
           <a href={appRoutes.dashboard} class={currentPage === 'dashboard' ? activePageClass : pageClass}>
-            Dashboard
+            {$LL.dashboard()}
           </a>
         {/if}
         {#if FeaturePoker}
@@ -137,9 +138,7 @@
           </a>
         {/if}
         {#if SubscriptionsEnabled && !$user.subscribed}
-          <a href={appRoutes.subscriptionPricing} class={currentPage === 'pricing' ? activePageClass : pageClass}>
-            Pricing
-          </a>
+          <a href={appRoutes.subscriptionPricing} class={currentPage === 'pricing' ? activePageClass : pageClass}>{$LL.pricing()}</a>
         {/if}
         {#if $user.name && validateUserIsAdmin($user)}
           <a href={appRoutes.admin} class={currentPage === 'admin' ? activePageClass : pageClass}>
@@ -257,9 +256,7 @@
               ? mobileActiveClass
               : mobilePageClass} font-rajdhani uppercase tracking-wide"
             onclick={() => (showMobileMenu = false)}
-          >
-            Pricing
-          </a>
+          >{$LL.pricing()}</a>
         {/if}
         {#if $user.name && validateUserIsAdmin($user)}
           <a

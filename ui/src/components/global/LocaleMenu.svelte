@@ -1,7 +1,9 @@
 <script lang="ts">
   import SubMenu from './SubMenu.svelte';
   import SubMenuItem from './SubMenuItem.svelte';
-  import { locales } from '../../config';
+  import { locales, DefaultLocale } from '../../config';
+  import LL from '../../i18n/i18n-svelte';
+  import { resolveLocale } from '../../i18n/locale';
   import { Globe } from '@lucide/svelte';
   import type { Locales } from '../../i18n/i18n-types';
 
@@ -15,7 +17,7 @@
     value: Locales;
   }
 
-  let { update, selectedLocale = 'en' }: Props = $props();
+  let { update, selectedLocale = resolveLocale(undefined, DefaultLocale) }: Props = $props();
 
   const supportedLocales: Array<Locale> = [];
   for (const [key, value] of Object.entries(locales)) {
@@ -35,11 +37,11 @@
   {#snippet button({ toggleSubmenu })}
     <button
       class="relative z-10 flex h-8 w-8 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
-      aria-label="Locale"
+      aria-label={$LL.locale()}
       type="button"
       onclick={toggleSubmenu}
     >
-      <span class="sr-only">Locale</span><Globe />
+      <span class="sr-only">{$LL.locale()}</span><Globe />
     </button>
   {/snippet}
 

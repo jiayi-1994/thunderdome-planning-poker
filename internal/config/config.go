@@ -75,7 +75,7 @@ func InitConfig(logger *otelzap.Logger) Config {
 	viper.SetDefault("config.allow_registration", true)
 	viper.SetDefault("config.allow_jira_import", true)
 	viper.SetDefault("config.allow_csv_import", true)
-	viper.SetDefault("config.default_locale", "en")
+	viper.SetDefault("config.default_locale", "zh")
 	viper.SetDefault("config.friendly_ui_verbs", false)
 	viper.SetDefault("config.allow_external_api", true)
 	viper.SetDefault("config.external_api_verify_required", true)

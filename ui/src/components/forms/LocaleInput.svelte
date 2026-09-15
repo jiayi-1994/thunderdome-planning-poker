@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { locales } from '../../config';
+  import { locales, DefaultLocale } from '../../config';
+  import { resolveLocale } from '../../i18n/locale';
   import SelectInput from './SelectInput.svelte';
 
   interface Props {
@@ -8,7 +9,7 @@
     class?: string;
   }
 
-  let { selectedLocale = 'en', class: klass = '' }: Props = $props();
+  let { selectedLocale = resolveLocale(undefined, DefaultLocale), class: klass = '' }: Props = $props();
 
   const supportedLocales: { name: string; value: string }[] = [];
 

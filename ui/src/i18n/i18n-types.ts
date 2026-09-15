@@ -14,6 +14,7 @@ export type Locales =
 	| 'it'
 	| 'pt'
 	| 'ru'
+	| 'zh'
 
 export type Translation = RootTranslation
 
@@ -3049,6 +3050,254 @@ type RootTranslation = {
 	 * C​l​e​a​r
 	 */
 	clear: string
+	/**
+	 * D​a​s​h​b​o​a​r​d
+	 */
+	dashboard: string
+	/**
+	 * P​r​i​c​i​n​g
+	 */
+	pricing: string
+	/**
+	 * E​s​t​i​m​a​t​i​o​n​ ​S​c​a​l​e
+	 */
+	estimationScale: string
+	/**
+	 * S​e​l​e​c​t​ ​a​n​ ​e​s​t​i​m​a​t​i​o​n​ ​s​c​a​l​e​.​.​.
+	 */
+	selectEstimationScale: string
+	/**
+	 * C​u​s​t​o​m
+	 */
+	customPointValue: string
+	/**
+	 * e​n​t​e​r​ ​a​ ​c​u​s​t​o​m​ ​p​o​i​n​t​ ​v​a​l​u​e​.​.​.
+	 */
+	customPointValuePlaceholder: string
+	/**
+	 * S​a​v​e​ ​S​e​t​t​i​n​g​s
+	 */
+	saveSettings: string
+	/**
+	 * m​a​i​n​ ​n​a​v​i​g​a​t​i​o​n
+	 */
+	mainNavigation: string
+	/**
+	 * E​m​p​o​w​e​r​ ​Y​o​u​r​ ​A​g​i​l​e​ ​T​e​a​m​s
+	 */
+	landingSlogan1: string
+	/**
+	 * R​e​l​e​a​s​e​ ​t​h​e​ ​T​h​u​n​d​e​r​ ​i​n​ ​Y​o​u​r​ ​A​g​i​l​e​ ​P​r​o​c​e​s​s
+	 */
+	landingSlogan2: string
+	/**
+	 * S​t​o​r​m​ ​T​h​r​o​u​g​h​ ​Y​o​u​r​ ​T​e​a​m​s​ ​S​p​r​i​n​t​s
+	 */
+	landingSlogan3: string
+	/**
+	 * E​l​e​c​t​r​i​f​y​i​n​g​ ​Y​o​u​r​ ​A​g​i​l​e​ ​E​x​p​e​r​i​e​n​c​e
+	 */
+	landingSlogan4: string
+	/**
+	 * T​h​e​ ​A​r​e​n​a​ ​W​h​e​r​e​ ​A​g​i​l​e​ ​T​e​a​m​s​ ​E​x​c​e​l
+	 */
+	landingSlogan5: string
+	/**
+	 * B​r​i​n​g​i​n​g​ ​t​h​e​ ​E​n​e​r​g​y​ ​B​a​c​k​ ​t​o​ ​A​g​i​l​e
+	 */
+	landingSlogan6: string
+	/**
+	 * H​a​r​n​e​s​s​ ​t​h​e​ ​S​t​o​r​m​,​ ​M​a​s​t​e​r​ ​t​h​e​ ​S​p​r​i​n​t
+	 */
+	landingSlogan7: string
+	/**
+	 * A​m​p​l​i​f​y​ ​Y​o​u​r​ ​T​e​a​m​s​ ​A​g​i​l​e​ ​P​o​t​e​n​t​i​a​l
+	 */
+	landingSlogan8: string
+	/**
+	 * T​r​a​n​s​f​o​r​m​ ​y​o​u​r​ ​a​g​i​l​e​ ​c​e​r​e​m​o​n​i​e​s​ ​f​r​o​m​ ​t​i​m​e​-​w​a​s​t​e​r​s​ ​i​n​t​o​ ​t​e​a​m​-​b​u​i​l​d​e​r​s​.​ ​G​e​t​ ​t​h​e​ ​t​o​o​l​s​ ​t​h​a​t​ ​m​a​k​e​ ​p​l​a​n​n​i​n​g​ ​p​o​k​e​r​,​ ​r​e​t​r​o​s​p​e​c​t​i​v​e​s​,​ ​a​n​d​ ​s​t​o​r​y​ ​m​a​p​p​i​n​g​ ​a​c​t​u​a​l​l​y​ ​w​o​r​k​ ​f​o​r​ ​r​e​m​o​t​e​ ​a​n​d​ ​i​n​-​p​e​r​s​o​n​ ​t​e​a​m​s​.
+	 */
+	landingIntro: string
+	/**
+	 * S​t​a​r​t​ ​P​l​a​n​n​i​n​g
+	 */
+	startPlanning: string
+	/**
+	 * G​e​t​ ​S​t​a​r​t​e​d​ ​F​r​e​e
+	 */
+	getStartedFree: string
+	/**
+	 * E​x​p​l​o​r​e​ ​F​e​a​t​u​r​e​s
+	 */
+	exploreFeatures: string
+	/**
+	 * P​l​a​n​n​i​n​g​ ​P​o​k​e​r​ ​T​h​a​t​ ​G​e​t​s​ ​C​o​n​s​e​n​s​u​s
+	 */
+	landingPokerTitle: string
+	/**
+	 * S​t​o​p​ ​l​e​t​t​i​n​g​ ​t​h​e​ ​l​o​u​d​e​s​t​ ​v​o​i​c​e​ ​w​i​n​ ​y​o​u​r​ ​e​s​t​i​m​a​t​i​o​n​s​.​ ​G​e​t​ ​a​c​c​u​r​a​t​e​ ​s​t​o​r​y​ ​p​o​i​n​t​s​ ​f​r​o​m​ ​y​o​u​r​ ​w​h​o​l​e​ ​t​e​a​m​ ​w​i​t​h​ ​b​i​a​s​-​f​r​e​e​ ​v​o​t​i​n​g​.
+	 */
+	landingPokerDescription: string
+	/**
+	 * <​s​t​r​o​n​g​>​E​l​i​m​i​n​a​t​e​ ​e​s​t​i​m​a​t​i​o​n​ ​b​i​a​s​:​<​/​s​t​r​o​n​g​>​ ​A​n​o​n​y​m​o​u​s​ ​v​o​t​i​n​g​ ​p​r​e​v​e​n​t​s​ ​a​n​c​h​o​r​i​n​g​ ​a​n​d​ ​g​r​o​u​p​t​h​i​n​k
+	 */
+	landingPokerBias: string
+	/**
+	 * <​s​t​r​o​n​g​>​F​l​e​x​i​b​l​e​ ​s​c​a​l​e​s​:​<​/​s​t​r​o​n​g​>​ ​U​s​e​ ​F​i​b​o​n​a​c​c​i​,​ ​T​-​s​h​i​r​t​ ​s​i​z​e​s​,​ ​o​r​ ​c​r​e​a​t​e​ ​c​u​s​t​o​m​ ​r​a​n​g​e​s​ ​t​h​a​t​ ​f​i​t​ ​y​o​u​r​ ​w​o​r​k​f​l​o​w
+	 */
+	landingPokerScales: string
+	/**
+	 * <​s​t​r​o​n​g​>​R​e​m​o​t​e​-​f​i​r​s​t​ ​d​e​s​i​g​n​:​<​/​s​t​r​o​n​g​>​ ​E​q​u​a​l​ ​p​a​r​t​i​c​i​p​a​t​i​o​n​ ​w​h​e​t​h​e​r​ ​y​o​u​'​r​e​ ​i​n​-​p​e​r​s​o​n​ ​o​r​ ​d​i​s​t​r​i​b​u​t​e​d
+	 */
+	landingPokerRemote: string
+	/**
+	 * R​e​t​r​o​s​p​e​c​t​i​v​e​s​ ​T​h​a​t​ ​D​r​i​v​e​ ​C​h​a​n​g​e
+	 */
+	landingRetroTitle: string
+	/**
+	 * M​o​v​e​ ​b​e​y​o​n​d​ ​t​h​e​ ​s​a​m​e​ ​o​l​d​ ​"​w​h​a​t​ ​w​e​n​t​ ​w​e​l​l​"​ ​d​i​s​c​u​s​s​i​o​n​s​.​ ​C​r​e​a​t​e​ ​p​s​y​c​h​o​l​o​g​i​c​a​l​ ​s​a​f​e​t​y​ ​w​h​e​r​e​ ​r​e​a​l​ ​i​m​p​r​o​v​e​m​e​n​t​s​ ​h​a​p​p​e​n​.
+	 */
+	landingRetroDescription: string
+	/**
+	 * <​s​t​r​o​n​g​>​B​a​t​t​l​e​-​t​e​s​t​e​d​ ​f​o​r​m​a​t​s​:​<​/​s​t​r​o​n​g​>​ ​S​t​a​r​t​/​S​t​o​p​/​C​o​n​t​i​n​u​e​,​ ​4​L​s​,​ ​M​a​d​/​S​a​d​/​G​l​a​d​,​ ​p​l​u​s​ ​c​u​s​t​o​m​ ​t​e​m​p​l​a​t​e​s
+	 */
+	landingRetroFormats: string
+	/**
+	 * <​s​t​r​o​n​g​>​S​a​f​e​ ​s​p​a​c​e​ ​f​o​r​ ​h​o​n​e​s​t​y​:​<​/​s​t​r​o​n​g​>​ ​A​n​o​n​y​m​o​u​s​ ​f​e​e​d​b​a​c​k​ ​r​e​m​o​v​e​s​ ​f​e​a​r​ ​o​f​ ​j​u​d​g​m​e​n​t​ ​o​r​ ​r​e​t​a​l​i​a​t​i​o​n
+	 */
+	landingRetroSafety: string
+	/**
+	 * <​s​t​r​o​n​g​>​A​c​c​o​u​n​t​a​b​i​l​i​t​y​ ​t​h​a​t​ ​w​o​r​k​s​:​<​/​s​t​r​o​n​g​>​ ​C​o​n​v​e​r​t​ ​i​n​s​i​g​h​t​s​ ​i​n​t​o​ ​t​r​a​c​k​a​b​l​e​ ​a​c​t​i​o​n​ ​i​t​e​m​s​ ​w​i​t​h​ ​f​o​l​l​o​w​-​t​h​r​o​u​g​h
+	 */
+	landingRetroActions: string
+	/**
+	 * S​t​o​r​y​ ​M​a​p​s​ ​T​h​a​t​ ​T​e​l​l​ ​t​h​e​ ​R​e​a​l​ ​S​t​o​r​y
+	 */
+	landingStoryTitle: string
+	/**
+	 * S​t​o​p​ ​b​u​i​l​d​i​n​g​ ​f​e​a​t​u​r​e​s​ ​i​n​ ​i​s​o​l​a​t​i​o​n​.​ ​V​i​s​u​a​l​i​z​e​ ​t​h​e​ ​c​o​m​p​l​e​t​e​ ​u​s​e​r​ ​j​o​u​r​n​e​y​ ​a​n​d​ ​p​r​i​o​r​i​t​i​z​e​ ​w​h​a​t​ ​a​c​t​u​a​l​l​y​ ​m​a​t​t​e​r​s​ ​t​o​ ​y​o​u​r​ ​u​s​e​r​s​.
+	 */
+	landingStoryDescription: string
+	/**
+	 * <​s​t​r​o​n​g​>​I​n​t​u​i​t​i​v​e​ ​d​r​a​g​-​a​n​d​-​d​r​o​p​:​<​/​s​t​r​o​n​g​>​ ​R​e​o​r​g​a​n​i​z​e​ ​s​t​o​r​i​e​s​ ​a​s​ ​e​a​s​i​l​y​ ​a​s​ ​m​o​v​i​n​g​ ​s​t​i​c​k​y​ ​n​o​t​e​s​ ​a​c​r​o​s​s​ ​y​o​u​r​ ​m​a​p​.
+	 */
+	landingStoryDrag: string
+	/**
+	 * <​s​t​r​o​n​g​>​F​l​e​x​i​b​l​e​ ​s​t​o​r​y​ ​o​r​g​a​n​i​z​a​t​i​o​n​:​<​/​s​t​r​o​n​g​>​ ​S​t​r​u​c​t​u​r​e​ ​w​o​r​k​ ​w​i​t​h​ ​g​o​a​l​s​,​ ​c​o​l​u​m​n​s​,​ ​p​e​r​s​o​n​a​s​,​ ​a​n​d​ ​v​i​s​u​a​l​ ​c​u​e​s​ ​t​h​a​t​ ​f​i​t​ ​y​o​u​r​ ​t​e​a​m​'​s​ ​w​o​r​k​f​l​o​w​.
+	 */
+	landingStoryOrganization: string
+	/**
+	 * <​s​t​r​o​n​g​>​R​i​c​h​ ​s​t​o​r​y​ ​d​e​t​a​i​l​s​:​<​/​s​t​r​o​n​g​>​ ​K​e​e​p​ ​d​e​s​c​r​i​p​t​i​o​n​s​,​ ​a​c​c​e​p​t​a​n​c​e​ ​c​r​i​t​e​r​i​a​,​ ​a​n​d​ ​e​s​t​i​m​a​t​e​s​ ​t​o​g​e​t​h​e​r​ ​w​h​e​r​e​ ​t​h​e​ ​w​h​o​l​e​ ​t​e​a​m​ ​c​a​n​ ​s​e​e​ ​t​h​e​m​.
+	 */
+	landingStoryDetails: string
+	/**
+	 * T​e​a​m​ ​C​h​e​c​k​i​n​s
+	 */
+	landingCheckinTitle: string
+	/**
+	 * S​k​i​p​ ​t​h​e​ ​s​t​a​t​u​s​ ​u​p​d​a​t​e​s​ ​e​v​e​r​y​o​n​e​ ​a​l​r​e​a​d​y​ ​k​n​o​w​s​.​ ​F​o​c​u​s​ ​y​o​u​r​ ​d​a​i​l​y​ ​s​t​a​n​d​u​p​s​ ​o​n​ ​b​l​o​c​k​e​r​s​,​ ​d​e​p​e​n​d​e​n​c​i​e​s​,​ ​a​n​d​ ​w​h​a​t​ ​a​c​t​u​a​l​l​y​ ​n​e​e​d​s​ ​t​e​a​m​ ​d​i​s​c​u​s​s​i​o​n​.
+	 */
+	landingCheckinDescription: string
+	/**
+	 * <​s​t​r​o​n​g​>​R​e​a​l​-​t​i​m​e​ ​t​e​a​m​ ​a​l​i​g​n​m​e​n​t​:​<​/​s​t​r​o​n​g​>​ ​L​i​v​e​ ​c​o​l​l​a​b​o​r​a​t​i​o​n​ ​k​e​e​p​s​ ​d​i​s​t​r​i​b​u​t​e​d​ ​p​r​o​d​u​c​t​ ​t​e​a​m​s​ ​i​n​ ​s​y​n​c
+	 */
+	landingCheckinAlignment: string
+	/**
+	 * <​s​t​r​o​n​g​>​S​u​r​f​a​c​e​ ​b​l​o​c​k​e​r​s​ ​f​a​s​t​:​<​/​s​t​r​o​n​g​>​ ​H​i​g​h​l​i​g​h​t​ ​b​l​o​c​k​e​r​s​ ​a​n​d​ ​d​i​s​c​u​s​s​i​o​n​ ​i​t​e​m​s​ ​s​o​ ​t​h​e​ ​t​e​a​m​ ​c​a​n​ ​f​o​c​u​s​ ​o​n​ ​w​h​a​t​ ​a​c​t​u​a​l​l​y​ ​n​e​e​d​s​ ​a​t​t​e​n​t​i​o​n
+	 */
+	landingCheckinBlockers: string
+	/**
+	 * <​s​t​r​o​n​g​>​C​o​m​m​e​n​t​ ​d​i​r​e​c​t​l​y​ ​o​n​ ​c​h​e​c​k​i​n​s​:​<​/​s​t​r​o​n​g​>​ ​T​e​a​m​ ​m​e​m​b​e​r​s​ ​c​a​n​ ​a​d​d​ ​c​o​n​t​e​x​t​,​ ​q​u​e​s​t​i​o​n​s​,​ ​a​n​d​ ​f​o​l​l​o​w​-​u​p​ ​n​o​t​e​s​ ​w​i​t​h​o​u​t​ ​d​e​r​a​i​l​i​n​g​ ​t​h​e​ ​s​t​a​n​d​u​p
+	 */
+	landingCheckinComments: string
+	/**
+	 * W​h​y​ ​C​h​o​o​s​e​ ​T​h​u​n​d​e​r​d​o​m​e​?
+	 */
+	landingWhyTitle: string
+	/**
+	 * B​u​i​l​t​ ​f​o​r​ ​R​e​m​o​t​e​ ​T​e​a​m​s
+	 */
+	landingRemoteTitle: string
+	/**
+	 * E​v​e​r​y​ ​f​e​a​t​u​r​e​ ​w​o​r​k​s​ ​s​e​a​m​l​e​s​s​l​y​ ​w​h​e​t​h​e​r​ ​y​o​u​r​ ​t​e​a​m​ ​i​s​ ​i​n​ ​t​h​e​ ​s​a​m​e​ ​r​o​o​m​ ​o​r​ ​s​p​r​e​a​d​ ​a​c​r​o​s​s​ ​c​o​n​t​i​n​e​n​t​s​.​ ​N​o​ ​m​o​r​e​ ​"​r​e​m​o​t​e​-​f​r​i​e​n​d​l​y​"​ ​c​o​m​p​r​o​m​i​s​e​s​.
+	 */
+	landingRemoteDescription: string
+	/**
+	 * P​s​y​c​h​o​l​o​g​i​c​a​l​ ​S​a​f​e​t​y​ ​F​i​r​s​t
+	 */
+	landingSafetyTitle: string
+	/**
+	 * A​n​o​n​y​m​o​u​s​ ​o​p​t​i​o​n​s​,​ ​i​n​c​l​u​s​i​v​e​ ​f​a​c​i​l​i​t​a​t​i​o​n​,​ ​a​n​d​ ​b​i​a​s​ ​r​e​d​u​c​t​i​o​n​ ​t​o​o​l​s​ ​h​e​l​p​ ​e​v​e​r​y​ ​t​e​a​m​ ​m​e​m​b​e​r​ ​c​o​n​t​r​i​b​u​t​e​ ​t​h​e​i​r​ ​b​e​s​t​ ​t​h​i​n​k​i​n​g​.
+	 */
+	landingSafetyDescription: string
+	/**
+	 * P​r​e​m​i​u​m​ ​c​l​o​u​d​-​h​o​s​t​e​d
+	 */
+	premiumCloudHosted: string
+	/**
+	 * s​e​l​f​-​h​o​s​t​e​d
+	 */
+	selfHosted: string
+	/**
+	 * c​o​n​v​e​n​i​e​n​c​e​ ​o​r
+	 */
+	hostingChoiceOr: string
+	/**
+	 * s​o​v​e​r​e​i​g​n​t​y​.​ ​T​h​e​ ​c​h​o​i​c​e​ ​i​s​ ​e​n​t​i​r​e​l​y​ ​y​o​u​r​s​.
+	 */
+	hostingChoiceEnd: string
+	/**
+	 * T​r​y​ ​P​l​a​n​n​i​n​g​ ​P​o​k​e​r
+	 */
+	tryPlanningPoker: string
+	/**
+	 * S​t​a​r​t​ ​a​ ​R​e​t​r​o​s​p​e​c​t​i​v​e
+	 */
+	startRetrospective: string
+	/**
+	 * T​r​y​ ​R​e​t​r​o​s​p​e​c​t​i​v​e​s
+	 */
+	tryRetrospectives: string
+	/**
+	 * C​r​e​a​t​e​ ​S​t​o​r​y​ ​M​a​p
+	 */
+	createStoryMap: string
+	/**
+	 * T​r​y​ ​S​t​o​r​y​ ​M​a​p​p​i​n​g
+	 */
+	tryStoryMapping: string
+	/**
+	 * S​p​r​i​n​t​ ​R​e​t​r​o​s​p​e​c​t​i​v​e​s​ ​P​r​e​v​i​e​w
+	 */
+	retroPreviewAlt: string
+	/**
+	 * S​t​o​r​y​ ​M​a​p​p​i​n​g​ ​P​r​e​v​i​e​w
+	 */
+	storyboardPreviewAlt: string
+	/**
+	 * T​e​a​m​ ​C​h​e​c​k​i​n​s​ ​P​r​e​v​i​e​w
+	 */
+	checkinsPreviewAlt: string
+	/**
+	 * L​i​g​h​t
+	 */
+	themeLight: string
+	/**
+	 * D​a​r​k
+	 */
+	themeDark: string
+	/**
+	 * S​y​s​t​e​m
+	 */
+	themeAuto: string
+	/**
+	 * M​u​s​t​ ​s​e​l​e​c​t​ ​a​n​ ​e​s​t​i​m​a​t​i​o​n​ ​s​c​a​l​e​ ​a​n​d​ ​a​l​l​o​w​e​d​ ​p​o​i​n​t​ ​v​a​l​u​e​s​.
+	 */
+	selectPointsError: string
+	/**
+	 * F​a​i​l​e​d​ ​t​o​ ​g​e​t​ ​e​s​t​i​m​a​t​i​o​n​ ​s​c​a​l​e​s
+	 */
+	getEstimationScalesError: string
 }
 
 export type TranslationFunctions = {
@@ -6034,6 +6283,254 @@ export type TranslationFunctions = {
 	 * Clear
 	 */
 	clear: () => LocalizedString
+	/**
+	 * Dashboard
+	 */
+	dashboard: () => LocalizedString
+	/**
+	 * Pricing
+	 */
+	pricing: () => LocalizedString
+	/**
+	 * Estimation Scale
+	 */
+	estimationScale: () => LocalizedString
+	/**
+	 * Select an estimation scale...
+	 */
+	selectEstimationScale: () => LocalizedString
+	/**
+	 * Custom
+	 */
+	customPointValue: () => LocalizedString
+	/**
+	 * enter a custom point value...
+	 */
+	customPointValuePlaceholder: () => LocalizedString
+	/**
+	 * Save Settings
+	 */
+	saveSettings: () => LocalizedString
+	/**
+	 * main navigation
+	 */
+	mainNavigation: () => LocalizedString
+	/**
+	 * Empower Your Agile Teams
+	 */
+	landingSlogan1: () => LocalizedString
+	/**
+	 * Release the Thunder in Your Agile Process
+	 */
+	landingSlogan2: () => LocalizedString
+	/**
+	 * Storm Through Your Teams Sprints
+	 */
+	landingSlogan3: () => LocalizedString
+	/**
+	 * Electrifying Your Agile Experience
+	 */
+	landingSlogan4: () => LocalizedString
+	/**
+	 * The Arena Where Agile Teams Excel
+	 */
+	landingSlogan5: () => LocalizedString
+	/**
+	 * Bringing the Energy Back to Agile
+	 */
+	landingSlogan6: () => LocalizedString
+	/**
+	 * Harness the Storm, Master the Sprint
+	 */
+	landingSlogan7: () => LocalizedString
+	/**
+	 * Amplify Your Teams Agile Potential
+	 */
+	landingSlogan8: () => LocalizedString
+	/**
+	 * Transform your agile ceremonies from time-wasters into team-builders. Get the tools that make planning poker, retrospectives, and story mapping actually work for remote and in-person teams.
+	 */
+	landingIntro: () => LocalizedString
+	/**
+	 * Start Planning
+	 */
+	startPlanning: () => LocalizedString
+	/**
+	 * Get Started Free
+	 */
+	getStartedFree: () => LocalizedString
+	/**
+	 * Explore Features
+	 */
+	exploreFeatures: () => LocalizedString
+	/**
+	 * Planning Poker That Gets Consensus
+	 */
+	landingPokerTitle: () => LocalizedString
+	/**
+	 * Stop letting the loudest voice win your estimations. Get accurate story points from your whole team with bias-free voting.
+	 */
+	landingPokerDescription: () => LocalizedString
+	/**
+	 * <strong>Eliminate estimation bias:</strong> Anonymous voting prevents anchoring and groupthink
+	 */
+	landingPokerBias: () => LocalizedString
+	/**
+	 * <strong>Flexible scales:</strong> Use Fibonacci, T-shirt sizes, or create custom ranges that fit your workflow
+	 */
+	landingPokerScales: () => LocalizedString
+	/**
+	 * <strong>Remote-first design:</strong> Equal participation whether you're in-person or distributed
+	 */
+	landingPokerRemote: () => LocalizedString
+	/**
+	 * Retrospectives That Drive Change
+	 */
+	landingRetroTitle: () => LocalizedString
+	/**
+	 * Move beyond the same old "what went well" discussions. Create psychological safety where real improvements happen.
+	 */
+	landingRetroDescription: () => LocalizedString
+	/**
+	 * <strong>Battle-tested formats:</strong> Start/Stop/Continue, 4Ls, Mad/Sad/Glad, plus custom templates
+	 */
+	landingRetroFormats: () => LocalizedString
+	/**
+	 * <strong>Safe space for honesty:</strong> Anonymous feedback removes fear of judgment or retaliation
+	 */
+	landingRetroSafety: () => LocalizedString
+	/**
+	 * <strong>Accountability that works:</strong> Convert insights into trackable action items with follow-through
+	 */
+	landingRetroActions: () => LocalizedString
+	/**
+	 * Story Maps That Tell the Real Story
+	 */
+	landingStoryTitle: () => LocalizedString
+	/**
+	 * Stop building features in isolation. Visualize the complete user journey and prioritize what actually matters to your users.
+	 */
+	landingStoryDescription: () => LocalizedString
+	/**
+	 * <strong>Intuitive drag-and-drop:</strong> Reorganize stories as easily as moving sticky notes across your map.
+	 */
+	landingStoryDrag: () => LocalizedString
+	/**
+	 * <strong>Flexible story organization:</strong> Structure work with goals, columns, personas, and visual cues that fit your team's workflow.
+	 */
+	landingStoryOrganization: () => LocalizedString
+	/**
+	 * <strong>Rich story details:</strong> Keep descriptions, acceptance criteria, and estimates together where the whole team can see them.
+	 */
+	landingStoryDetails: () => LocalizedString
+	/**
+	 * Team Checkins
+	 */
+	landingCheckinTitle: () => LocalizedString
+	/**
+	 * Skip the status updates everyone already knows. Focus your daily standups on blockers, dependencies, and what actually needs team discussion.
+	 */
+	landingCheckinDescription: () => LocalizedString
+	/**
+	 * <strong>Real-time team alignment:</strong> Live collaboration keeps distributed product teams in sync
+	 */
+	landingCheckinAlignment: () => LocalizedString
+	/**
+	 * <strong>Surface blockers fast:</strong> Highlight blockers and discussion items so the team can focus on what actually needs attention
+	 */
+	landingCheckinBlockers: () => LocalizedString
+	/**
+	 * <strong>Comment directly on checkins:</strong> Team members can add context, questions, and follow-up notes without derailing the standup
+	 */
+	landingCheckinComments: () => LocalizedString
+	/**
+	 * Why Choose Thunderdome?
+	 */
+	landingWhyTitle: () => LocalizedString
+	/**
+	 * Built for Remote Teams
+	 */
+	landingRemoteTitle: () => LocalizedString
+	/**
+	 * Every feature works seamlessly whether your team is in the same room or spread across continents. No more "remote-friendly" compromises.
+	 */
+	landingRemoteDescription: () => LocalizedString
+	/**
+	 * Psychological Safety First
+	 */
+	landingSafetyTitle: () => LocalizedString
+	/**
+	 * Anonymous options, inclusive facilitation, and bias reduction tools help every team member contribute their best thinking.
+	 */
+	landingSafetyDescription: () => LocalizedString
+	/**
+	 * Premium cloud-hosted
+	 */
+	premiumCloudHosted: () => LocalizedString
+	/**
+	 * self-hosted
+	 */
+	selfHosted: () => LocalizedString
+	/**
+	 * convenience or
+	 */
+	hostingChoiceOr: () => LocalizedString
+	/**
+	 * sovereignty. The choice is entirely yours.
+	 */
+	hostingChoiceEnd: () => LocalizedString
+	/**
+	 * Try Planning Poker
+	 */
+	tryPlanningPoker: () => LocalizedString
+	/**
+	 * Start a Retrospective
+	 */
+	startRetrospective: () => LocalizedString
+	/**
+	 * Try Retrospectives
+	 */
+	tryRetrospectives: () => LocalizedString
+	/**
+	 * Create Story Map
+	 */
+	createStoryMap: () => LocalizedString
+	/**
+	 * Try Story Mapping
+	 */
+	tryStoryMapping: () => LocalizedString
+	/**
+	 * Sprint Retrospectives Preview
+	 */
+	retroPreviewAlt: () => LocalizedString
+	/**
+	 * Story Mapping Preview
+	 */
+	storyboardPreviewAlt: () => LocalizedString
+	/**
+	 * Team Checkins Preview
+	 */
+	checkinsPreviewAlt: () => LocalizedString
+	/**
+	 * Light
+	 */
+	themeLight: () => LocalizedString
+	/**
+	 * Dark
+	 */
+	themeDark: () => LocalizedString
+	/**
+	 * System
+	 */
+	themeAuto: () => LocalizedString
+	/**
+	 * Must select an estimation scale and allowed point values.
+	 */
+	selectPointsError: () => LocalizedString
+	/**
+	 * Failed to get estimation scales
+	 */
+	getEstimationScalesError: () => LocalizedString
 }
 
 export type Formatters = {}

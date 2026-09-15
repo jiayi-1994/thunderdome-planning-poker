@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LL from '../../i18n/i18n-svelte';
   import { MonitorCog, MoonStar, Sun } from '@lucide/svelte';
   import SubMenu from './SubMenu.svelte';
   import SubMenuItem from './SubMenuItem.svelte';
@@ -21,11 +22,11 @@
   {#snippet button({ toggleSubmenu })}
     <button
       class="relative z-10 flex h-8 w-8 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700"
-      aria-label="Theme"
+      aria-label={$LL.theme()}
       type="button"
       onclick={toggleSubmenu}
     >
-      <span class="sr-only">Theme</span>
+      <span class="sr-only">{$LL.theme()}</span>
       <Sun class="dark:hidden h-5 w-5" />
       <MoonStar class="hidden h-5 w-5 dark:block" />
     </button>
@@ -36,21 +37,21 @@
       onClickHandler={setTheme('light', toggleSubmenu)}
       testId="theme-light"
       icon={Sun}
-      label="Light"
+      label={$LL.themeLight()}
       active={selectedTheme === 'light'}
     />
     <SubMenuItem
       onClickHandler={setTheme('dark', toggleSubmenu)}
       testId="theme-dark"
       icon={MoonStar}
-      label="Dark"
+      label={$LL.themeDark()}
       active={selectedTheme === 'dark'}
     />
     <SubMenuItem
       onClickHandler={setTheme('auto', toggleSubmenu)}
       testId="theme-auto"
       icon={MonitorCog}
-      label="System"
+      label={$LL.themeAuto()}
       active={selectedTheme === 'auto'}
     />
   {/snippet}

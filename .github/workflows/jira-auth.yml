@@ -31,6 +31,11 @@ on:
       - 'ui/src/components/poker/JiraSyncStatus.svelte'
       - 'ui/src/components/poker/pointValues.ts'
       - 'ui/src/pages/poker/PokerGame.svelte'
+      - 'ui/src/i18n/**'
+      - 'ui/src/config.ts'
+      - 'ui/src/App.svelte'
+      - 'ui/src/components/global/LocaleMenu.svelte'
+      - 'ui/src/components/global/GlobalHeader.svelte'
       - 'ui/src/types/poker.ts'
       - 'ui/src/pages/user/UserProfile.svelte'
       - 'go.mod'
@@ -80,5 +85,5 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          npx vitest run src/components/jira/ src/components/poker/JiraWriteback.test.ts src/components/poker/PokerSettings.test.ts src/components/poker/VoteTimer.test.ts src/components/poker/CategoryVoting.test.ts
+          npx vitest run src/i18n/ src/components/jira/ src/components/poker/JiraWriteback.test.ts src/components/poker/PokerSettings.test.ts src/components/poker/VoteTimer.test.ts src/components/poker/CategoryVoting.test.ts
           npm run build

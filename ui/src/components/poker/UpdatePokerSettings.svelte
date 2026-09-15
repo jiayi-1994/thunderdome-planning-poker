@@ -174,7 +174,7 @@
     </div>
 
     <div class="text-right">
-      <SolidButton type="submit">Save Settings</SolidButton>
+      <SolidButton type="submit">{$LL.saveSettings()}</SolidButton>
     </div>
   </form>
 </Modal>

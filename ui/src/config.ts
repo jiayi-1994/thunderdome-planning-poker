@@ -5,6 +5,7 @@ declare global {
 }
 
 const locales = {
+  zh: '简体中文',
   de: 'Deutsch',
   en: 'English',
   es: 'Español',
@@ -21,7 +22,7 @@ const AppConfig =
     ? window.appConfig
     : {
         PathPrefix: '',
-        DefaultLocale: 'en',
+        DefaultLocale: 'zh',
         Subscription: {},
         RetroDefaultTemplateID: '',
       };

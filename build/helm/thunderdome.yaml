@@ -76,7 +76,7 @@ app:
       - key: CONFIG_ALLOW_CSV_IMPORT
         value: true
       - key: CONFIG_DEFAULT_LOCALE
-        value: en
+        value: zh
       - key: CONFIG_FRIENDLY_UI_VERBS
         value: false
       - key: CONFIG_ALLOW_EXTERNAL_API

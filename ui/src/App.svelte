@@ -56,8 +56,8 @@
   import AdminSubscriptions from './pages/admin/Subscriptions.svelte';
   import AdminSubscription from './pages/admin/Subscription.svelte';
   import AdminEstimationScales from './pages/admin/poker/EstimationScales.svelte';
-  import { setLocale } from './i18n/i18n-svelte';
-  import { detectLocale } from './i18n/i18n-util';
+  import { locale, setLocale } from './i18n/i18n-svelte';
+  import { resolveLocale } from './i18n/locale';
   import Confirmation from './pages/subscription/Confirmation.svelte';
   import Pricing from './pages/subscription/Pricing.svelte';
   import PrivacyPolicy from './pages/support/PrivacyPolicy.svelte';
@@ -88,9 +88,7 @@
 
   let notifications: NotificationService | undefined = $state();
 
-  const detectedLocale = detectLocale() || DefaultLocale;
-
-  const selectedLocale = detectedLocale;
+  const selectedLocale = resolveLocale(undefined, DefaultLocale);
   loadLocale(selectedLocale);
   setLocale(selectedLocale);
 
@@ -98,12 +96,13 @@
   user.subscribe((w: any) => {
     activeWarrior = w;
 
-    const selectedLocale = w?.locale || detectedLocale;
+    const selectedLocale = resolveLocale(w?.locale, DefaultLocale);
     loadLocale(selectedLocale);
     setLocale(selectedLocale);
   });
 
   $effect(() => {
+    document.documentElement.lang = $locale;
     if (document.dir !== $dir) {
       document.dir = $dir;
     }

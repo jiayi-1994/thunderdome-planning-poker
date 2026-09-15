@@ -97,7 +97,7 @@
     let endpoint = scope === 'project' ? `${apiPrefix}/poker` : `${apiPrefix}/users/${$user.id}/battles`;
 
     if (selectedEstimationScale === '' || allowedPointValues.length === 0) {
-      notifications.danger('Must select an estimation scale and allowed point values.');
+      notifications.danger($LL.selectPointsError());
       return;
     }
 
@@ -161,7 +161,7 @@
         combineEstimationScales();
       })
       .catch(function () {
-        notifications.danger('Failed to get public estimation scales');
+        notifications.danger($LL.getEstimationScalesError());
       });
   }
 
@@ -190,7 +190,7 @@
         combineEstimationScales();
       })
       .catch(function () {
-        notifications.danger('Failed to get team estimation scales');
+        notifications.danger($LL.getEstimationScalesError());
       });
 
     if (team.organization_id !== '') {
@@ -201,7 +201,7 @@
           combineEstimationScales();
         })
         .catch(function () {
-          notifications.danger('Failed to get organization estimation scales');
+          notifications.danger($LL.getEstimationScalesError());
         });
     }
   }
@@ -365,11 +365,11 @@
   {/if}
 
   <div class="mb-4">
-    <div class="text-gray-700 dark:text-gray-400 text-sm font-bold inline-block mb-2">Estimation Scale</div>
+    <div class="text-gray-700 dark:text-gray-400 text-sm font-bold inline-block mb-2">{$LL.estimationScale()}</div>
     <SelectWithSubtext
       on:change={updatePointValues}
       items={estimateScales}
-      label="Select an estimation scale..."
+      label={$LL.selectEstimationScale()}
       selectedItemId={selectedEstimationScale}
       itemType="estimation_scale"
     />

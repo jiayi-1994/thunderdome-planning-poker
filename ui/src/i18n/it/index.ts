@@ -1,6 +1,8 @@
+import en from '../en';
 import type { Translation } from '../i18n-types';
 
 const it: Translation = {
+  ...en,
   userGuide: 'Guida Utente',
   privacyPolicy: 'Informativa sulla Privacy',
   termsConditions: 'Termini e Condizioni',

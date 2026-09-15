@@ -180,7 +180,7 @@ If the team agrees, the game is over. If not, then it has just begun!
 
 Choose **测试**, **前端开发**, or **后端开发** before voting. Only that role's cards are shown. The browser remembers the choice for this user and game. After casting a ballot, retract it before changing roles; a new round allows another choice. Spectators see the results without voting cards.
 
-When voting ends, everyone sees all three category averages and their total. A category with at least four distinct numeric scores displays **需要讨论**, with its score values. For example, `1/2`, `1`, `3`, and `5` triggers a warning; repeated scores, equivalent values such as `1/2` and `0.5`, nonvoters, and abstentions do not increase the distinct count. Saved results retain the warning. The warning is advisory; automatic Jira writeback continues at the end of voting.
+When voting ends, everyone sees all three category averages and their total. A category with at least four distinct numeric scores displays **需要讨论**, with its score values. For example, `1/2`, `1`, `3`, and `5` triggers a warning; repeated scores, equivalent values such as `1/2` and `0.5`, nonvoters, and abstentions do not increase the distinct count. Saved results retain the warning. The warning is advisory; Jira writeback is queued only after the facilitator clicks **Save** (保存).
 
 ### Stories
 

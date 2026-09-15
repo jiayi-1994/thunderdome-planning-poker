@@ -16,18 +16,19 @@
 
   const { ShowActiveCountries, PathPrefix, RepoURL } = AppConfig;
 
-  const slogans = [
-    'Empower Your Agile Teams',
-    'Release the Thunder in Your Agile Process',
-    'Storm Through Your Teams Sprints',
-    'Electrifying Your Agile Experience',
-    'The Arena Where Agile Teams Excel',
-    'Bringing the Energy Back to Agile',
-    'Harness the Storm, Master the Sprint',
-    'Amplify Your Teams Agile Potential',
-  ];
+  const slogans = $derived([
+    $LL.landingSlogan1(),
+    $LL.landingSlogan2(),
+    $LL.landingSlogan3(),
+    $LL.landingSlogan4(),
+    $LL.landingSlogan5(),
+    $LL.landingSlogan6(),
+    $LL.landingSlogan7(),
+    $LL.landingSlogan8(),
+  ]);
 
-  let randomSlogan = $derived(slogans[Math.floor(Math.random() * slogans.length)]);
+  const sloganIndex = Math.floor(Math.random() * 8);
+  let randomSlogan = $derived(slogans[sloganIndex]);
 
   onMount(() => window.scrollTo(0, 0));
 </script>
@@ -47,8 +48,7 @@
           {randomSlogan}
         </h1>
         <p class="max-w-4xl mx-auto text-xl sm:text-2xl text-blue-100 mb-8">
-          Transform your agile ceremonies from time-wasters into team-builders. Get the tools that make planning poker,
-          retrospectives, and story mapping actually work for remote and in-person teams.
+          {$LL.landingIntro()}
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
           {#if $user.id}
@@ -56,21 +56,21 @@
               href={appRoutes.games}
               class="bg-white text-indigo-700 hover:bg-gray-100 font-semibold py-3 px-8 rounded-full transition duration-300 shadow-lg"
             >
-              Start Planning
+              {$LL.startPlanning()}
             </a>
           {:else}
             <a
               href={appRoutes.register}
               class="bg-white text-indigo-700 hover:bg-gray-100 font-semibold py-3 px-8 rounded-full transition duration-300 shadow-lg"
             >
-              Get Started Free
+              {$LL.getStartedFree()}
             </a>
           {/if}
           <a
             href="#features"
             class="bg-transparent text-white hover:bg-white/10 border border-white font-semibold py-3 px-8 rounded-full transition duration-300"
           >
-            Explore Features
+            {$LL.exploreFeatures()}
           </a>
         </div>
       </div>
@@ -83,28 +83,27 @@
         <div class="md:w-1/2 md:pe-8 mb-8 md:mb-0">
           <div class="title-line bg-yellow-thunder"></div>
           <h2 class="text-4xl font-semibold font-rajdhani uppercase dark:text-white mb-6">
-            Planning Poker That Gets Consensus
+            {$LL.landingPokerTitle()}
           </h2>
           <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
-            Stop letting the loudest voice win your estimations. Get accurate story points from your whole team with
-            bias-free voting.
+            {$LL.landingPokerDescription()}
           </p>
           <ul class="space-y-3 text-gray-700 dark:text-gray-300 mb-8">
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
-              <span><strong>Eliminate estimation bias:</strong> Anonymous voting prevents anchoring and groupthink</span
+              <span>{@html $LL.landingPokerBias()}</span
               >
             </li>
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Flexible scales:</strong> Use Fibonacci, T-shirt sizes, or create custom ranges that fit your workflow</span
+                >{@html $LL.landingPokerScales()}</span
               >
             </li>
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Remote-first design:</strong> Equal participation whether you're in-person or distributed</span
+                >{@html $LL.landingPokerRemote()}</span
               >
             </li>
           </ul>
@@ -115,7 +114,7 @@
             <span
               class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0"
             >
-              {$user.id ? $LL.battleCreate() : 'Try Planning Poker'}
+              {$user.id ? $LL.battleCreate() : $LL.tryPlanningPoker()}
             </span>
           </a>
         </div>
@@ -143,29 +142,28 @@
         <div class="md:w-1/2 md:ps-8 mb-8 md:mb-0">
           <div class="title-line bg-yellow-thunder"></div>
           <h2 class="text-4xl font-semibold font-rajdhani uppercase dark:text-white mb-6">
-            Retrospectives That Drive Change
+            {$LL.landingRetroTitle()}
           </h2>
           <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
-            Move beyond the same old "what went well" discussions. Create psychological safety where real improvements
-            happen.
+            {$LL.landingRetroDescription()}
           </p>
           <ul class="space-y-3 text-gray-700 dark:text-gray-300 mb-8">
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Battle-tested formats:</strong> Start/Stop/Continue, 4Ls, Mad/Sad/Glad, plus custom templates</span
+                >{@html $LL.landingRetroFormats()}</span
               >
             </li>
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Safe space for honesty:</strong> Anonymous feedback removes fear of judgment or retaliation</span
+                >{@html $LL.landingRetroSafety()}</span
               >
             </li>
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Accountability that works:</strong> Convert insights into trackable action items with follow-through</span
+                >{@html $LL.landingRetroActions()}</span
               >
             </li>
           </ul>
@@ -176,7 +174,7 @@
             <span
               class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0"
             >
-              {$user.id ? 'Start a Retrospective' : 'Try Retrospectives'}
+              {$user.id ? $LL.startRetrospective() : $LL.tryRetrospectives()}
             </span>
           </a>
         </div>
@@ -185,12 +183,12 @@
             <img
               class="rounded-b-lg hidden dark:block"
               src="{PathPrefix}/img/previews/retro_20250812_dark.png"
-              alt="Sprint Retrospectives Preview"
+              alt={$LL.retroPreviewAlt()}
             />
             <img
               class="rounded-b-lg dark:hidden"
               src="{PathPrefix}/img/previews/retro_20250812_light.png"
-              alt="Sprint Retrospectives Preview"
+              alt={$LL.retroPreviewAlt()}
             />
           </BrowserMock>
         </div>
@@ -204,32 +202,28 @@
         <div class="md:w-1/2 md:pe-8 mb-8 md:mb-0">
           <div class="title-line bg-yellow-thunder"></div>
           <h2 class="text-4xl font-semibold font-rajdhani uppercase dark:text-white mb-6">
-            Story Maps That Tell the Real Story
+            {$LL.landingStoryTitle()}
           </h2>
           <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
-            Stop building features in isolation. Visualize the complete user journey and prioritize what actually
-            matters to your users.
+            {$LL.landingStoryDescription()}
           </p>
           <ul class="space-y-3 text-gray-700 dark:text-gray-300 mb-8">
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Intuitive drag-and-drop:</strong> Reorganize stories as easily as moving sticky notes across your
-                map.</span
+                >{@html $LL.landingStoryDrag()}</span
               >
             </li>
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Flexible story organization:</strong> Structure work with goals, columns, personas, and visual cues
-                that fit your team's workflow.</span
+                >{@html $LL.landingStoryOrganization()}</span
               >
             </li>
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Rich story details:</strong> Keep descriptions, acceptance criteria, and estimates together where
-                the whole team can see them.</span
+                >{@html $LL.landingStoryDetails()}</span
               >
             </li>
           </ul>
@@ -240,7 +234,7 @@
             <span
               class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0"
             >
-              {$user.id ? 'Create Story Map' : 'Try Story Mapping'}
+              {$user.id ? $LL.createStoryMap() : $LL.tryStoryMapping()}
             </span>
           </a>
         </div>
@@ -249,12 +243,12 @@
             <img
               class="rounded-b-lg hidden dark:block"
               src="{PathPrefix}/img/previews/storyboard_20250812_dark.png"
-              alt="Story Mapping Preview"
+              alt={$LL.storyboardPreviewAlt()}
             />
             <img
               class="rounded-b-lg dark:hidden"
               src="{PathPrefix}/img/previews/storyboard_20250812_light.png"
-              alt="Story Mapping Preview"
+              alt={$LL.storyboardPreviewAlt()}
             />
           </BrowserMock>
         </div>
@@ -267,30 +261,27 @@
       <div class="flex flex-col md:flex-row-reverse items-center justify-between">
         <div class="md:w-1/2 md:ps-8 mb-8 md:mb-0">
           <div class="title-line bg-yellow-thunder"></div>
-          <h2 class="text-4xl font-semibold font-rajdhani uppercase dark:text-white mb-6">Team Checkins</h2>
+          <h2 class="text-4xl font-semibold font-rajdhani uppercase dark:text-white mb-6">{$LL.landingCheckinTitle()}</h2>
           <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
-            Skip the status updates everyone already knows. Focus your daily standups on blockers, dependencies, and
-            what actually needs team discussion.
+            {$LL.landingCheckinDescription()}
           </p>
           <ul class="space-y-3 text-gray-700 dark:text-gray-300 mb-8">
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Real-time team alignment:</strong> Live collaboration keeps distributed product teams in sync</span
+                >{@html $LL.landingCheckinAlignment()}</span
               >
             </li>
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Surface blockers fast:</strong> Highlight blockers and discussion items so the team can focus on
-                what actually needs attention</span
+                >{@html $LL.landingCheckinBlockers()}</span
               >
             </li>
             <li class="flex items-start">
               <span class="text-indigo-500 dark:text-indigo-400 me-2">✓</span>
               <span
-                ><strong>Comment directly on checkins:</strong> Team members can add context, questions, and follow-up notes
-                without derailing the standup</span
+                >{@html $LL.landingCheckinComments()}</span
               >
             </li>
           </ul>
@@ -299,12 +290,12 @@
           <img
             class="rounded-lg shadow-lg hidden dark:block max-w-lg mx-auto"
             src="{PathPrefix}/img/previews/team_checkins_dark_2025_09_24.png"
-            alt="Team Checkins Preview"
+            alt={$LL.checkinsPreviewAlt()}
           />
           <img
             class="rounded-lg shadow-lg dark:hidden max-w-lg mx-auto"
             src="{PathPrefix}/img/previews/team_checkins_light_2025_09_24.png"
-            alt="Team Checkins Preview"
+            alt={$LL.checkinsPreviewAlt()}
           />
         </div>
       </div>
@@ -313,46 +304,44 @@
 
   <section class="bg-indigo-600 text-white py-20">
     <div class="container mx-auto px-4 text-center">
-      <h2 class="text-4xl font-bold mb-6 font-rajdhani uppercase">Why Choose Thunderdome?</h2>
+      <h2 class="text-4xl font-bold mb-6 font-rajdhani uppercase">{$LL.landingWhyTitle()}</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-gray-800 dark:text-white">
           <div class="text-indigo-500 text-4xl mb-4">
             <Zap class="h-12 w-12 mx-auto" />
           </div>
-          <h3 class="text-xl font-semibold mb-2">Built for Remote Teams</h3>
+          <h3 class="text-xl font-semibold mb-2">{$LL.landingRemoteTitle()}</h3>
           <p>
-            Every feature works seamlessly whether your team is in the same room or spread across continents. No more
-            "remote-friendly" compromises.
+            {$LL.landingRemoteDescription()}
           </p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-gray-800 dark:text-white">
           <div class="text-indigo-500 text-4xl mb-4">
             <Users class="h-12 w-12 mx-auto" />
           </div>
-          <h3 class="text-xl font-semibold mb-2">Psychological Safety First</h3>
+          <h3 class="text-xl font-semibold mb-2">{$LL.landingSafetyTitle()}</h3>
           <p>
-            Anonymous options, inclusive facilitation, and bias reduction tools help every team member contribute their
-            best thinking.
+            {$LL.landingSafetyDescription()}
           </p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-gray-800 dark:text-white">
           <div class="text-indigo-500 text-4xl mb-4">
             <Github class="h-12 w-12 mx-auto" />
           </div>
-          <h3 class="text-xl font-semibold mb-2">Open Source</h3>
+          <h3 class="text-xl font-semibold mb-2">{$LL.openSource()}</h3>
           <p>
             <a
               href={appRoutes.subscriptionPricing}
               class="text-indigo-400 dark:text-indigo-300 hover:text-yellow-thunder dark:hover:text-yellow-thunder font-bold"
-              >Premium cloud-hosted</a
+              >{$LL.premiumCloudHosted()}</a
             >
-            convenience or
+            {$LL.hostingChoiceOr()}
             <a
               href="{RepoURL}/blob/main/docs/INSTALLATION.md"
               target="_blank"
               class="text-indigo-400 dark:text-indigo-300 hover:text-yellow-thunder dark:hover:text-yellow-thunder font-bold"
-              >self-hosted</a
-            > sovereignty. The choice is entirely yours.
+              >{$LL.selfHosted()}</a
+            > {$LL.hostingChoiceEnd()}
           </p>
         </div>
       </div>

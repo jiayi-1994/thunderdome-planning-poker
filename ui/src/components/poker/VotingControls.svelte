@@ -107,13 +107,13 @@
                 {#each points as point}
                   <option value={point}>{point}</option>
                 {/each}
-                <option value="CUSTOM">Custom</option>
+                <option value="CUSTOM">{$LL.customPointValue()}</option>
               </SelectInput>
               {#if customPointValue}
                 <TextInput
                   name="customPlanPoints"
                   bind:value={customPlanPoints}
-                  placeholder="enter a custom point value..."
+                  placeholder={$LL.customPointValuePlaceholder()}
                   id="customPlanPoints"
                   class="mt-2"
                 />
