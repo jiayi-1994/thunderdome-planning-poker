@@ -26,6 +26,36 @@ const visibleCards = () =>
   );
 
 describe('Poker countdown and card settings', () => {
+  it('prevents duplicate creates while Jira initialization is pending and allows retry after a create failure', async () => {
+    vi.clearAllMocks();
+    const route = vi.fn();
+    let rejectCreate: (reason: Error) => void = () => {};
+    const pending = new Promise<Response>((_, reject) => {
+      rejectCreate = reject;
+    });
+    const xfetch = vi.fn(async (url: string, config?: { body?: unknown }) => {
+      if (config?.body) return pending;
+      return response(
+        url.endsWith('/estimation-scales/public')
+          ? [{ id: 'default', name: 'Thunderdome Default', defaultScale: true, values: deck }]
+          : [],
+      );
+    });
+    render(CreatePokerGame, { notifications, router: { route }, xfetch });
+    await expect.poll(visibleCards).toEqual(deck);
+    await page.getByRole('textbox', { name: 'Game Name', exact: true }).fill('Pending planning');
+    const form = document.forms.namedItem('createBattle');
+    form?.requestSubmit();
+    form?.requestSubmit();
+    const create = page.getByRole('button', { name: 'Create Game', exact: true });
+    await expect.element(create).toBeDisabled();
+    expect(xfetch.mock.calls.filter(([, config]) => config?.body)).toHaveLength(1);
+    rejectCreate(new Error('Create failed'));
+    await expect.element(create).toBeEnabled();
+    expect(notifications.danger).toHaveBeenCalled();
+    expect(route).not.toHaveBeenCalled();
+  });
+
   it('loads a saved duration and saves the revised duration in seconds during an active round', async () => {
     const handleBattleEdit = vi.fn();
     render(EditPokerGame, {

@@ -39,6 +39,7 @@
   let organizationEstimationScales = [];
   let estimateScales = $state([]);
   let selectedEstimationScale = $state('');
+  let creating = $state(false);
   let defaultSettings = {
     battleName: '',
     autoFinishVoting: true,
@@ -94,6 +95,7 @@
 
   function createBattle(e) {
     e.preventDefault();
+    if (creating) return;
     let endpoint = scope === 'project' ? `${apiPrefix}/poker` : `${apiPrefix}/users/${$user.id}/battles`;
 
     if (selectedEstimationScale === '' || allowedPointValues.length === 0) {
@@ -125,6 +127,7 @@
       endpoint = `/api/teams/${pokerSettings.selectedTeam}/users/${$user.id}/battles`;
     }
 
+    creating = true;
     xfetch(endpoint, { body })
       .then(res => res.json())
       .then(function (result) {
@@ -144,6 +147,9 @@
         } else {
           notifications.danger($LL.createBattleError());
         }
+      })
+      .finally(() => {
+        creating = false;
       });
   }
 
@@ -491,6 +497,6 @@
   </div>
 
   <div class="text-right">
-    <SolidButton type="submit">{$LL.battleCreate()}</SolidButton>
+    <SolidButton type="submit" disabled={creating}>{$LL.battleCreate()}</SolidButton>
   </div>
 </form>
