@@ -782,7 +782,7 @@
                 }}
                 testId="jira-writeback-open"
                 icon={ExternalLink}
-                label="Jira 自动回写"
+                label="Jira 点数回写"
               />
               {#if !gameOver && isFacilitator}
                 <SubMenuItem

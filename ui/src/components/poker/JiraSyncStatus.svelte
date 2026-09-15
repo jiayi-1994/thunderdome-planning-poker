@@ -33,7 +33,9 @@
 
 {#if sync}
   <div class="text-sm font-normal leading-relaxed" data-testid="jira-sync-status" role="status">
-    {#if sync.status === 'succeeded'}
+    {#if sync.status === 'awaiting_save'}
+      <p class="text-gray-600 dark:text-gray-300">点击 Save 确认分数后回写 Jira。</p>
+    {:else if sync.status === 'succeeded'}
       <p class="text-green-700 dark:text-lime-400">已回写 Jira · {sync.issueKey} · {sync.points} 点</p>
     {:else if sync.status === 'pending' || waiting}
       <p class="text-blue-700 dark:text-sky-400">

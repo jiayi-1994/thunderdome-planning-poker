@@ -1,4 +1,5 @@
 import type { PokerVoteCategory } from '../../types/poker';
+import { availablePokerPoints, pokerPointValues } from './pointValues';
 
 export const voteCategories: Array<{ id: PokerVoteCategory; label: string }> = [
   { id: 'testing', label: '测试' },
@@ -14,8 +15,8 @@ export function numericPoint(value: string): number | null {
 }
 
 export function categoryPointValues(points: string[]): string[] {
-  const numeric = points.filter(point => numericPoint(point) !== null);
-  return [...new Set(['0', ...(numeric.length ? numeric : ['1', '2', '3', '5', '8', '13']), '?'])];
+  const allowed = availablePokerPoints(points);
+  return [...new Set(allowed.length ? allowed : pokerPointValues)];
 }
 
 export const emptyCategoryVotes = (): Record<PokerVoteCategory, string> => ({ testing: '', frontend: '', backend: '' });

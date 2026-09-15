@@ -17,9 +17,9 @@ const estimation: PokerEstimation = {
 };
 
 describe('category estimation', () => {
-  it('offers numeric cards including explicit zero for nonnumeric scales', () => {
-    expect(categoryPointValues(['XS', 'S', 'M', '?'])).toEqual(['0', '1', '2', '3', '5', '8', '13', '?']);
-    expect(categoryPointValues(['0', '1/2', '1', '2.5', '☕️'])).toEqual(['0', '1/2', '1', '2.5', '?']);
+  it('uses only the allowed seven cards without reintroducing removed choices', () => {
+    expect(categoryPointValues(['XS', 'S', 'M', '?'])).toEqual(['0', '1/2', '1', '2', '3', '5', '8']);
+    expect(categoryPointValues(['0', '1/2', '1', '2.5', '13', '?', '☕️'])).toEqual(['0', '1/2', '1']);
   });
 
   it('shows only the chosen role and retracts its selected score', async () => {
@@ -62,16 +62,21 @@ describe('category estimation', () => {
     await expect.element(page.getByText('Private name', { exact: true })).not.toBeInTheDocument();
   });
 
-  it('saves the calculated total without snapping to the card scale', async () => {
+  it('finishes voting without finalizing until Save is clicked', async () => {
     const sendSocketEvent = vi.fn();
-    render(VotingControls, {
+    const { rerender } = render(VotingControls, {
       planId: 'story',
-      votingLocked: true,
+      votingLocked: false,
       categoryEstimation: true,
       calculatedPoints: '12.83',
       points: ['1', '3', '5'],
       sendSocketEvent,
     });
+    await page.getByTestId('voting-finish').click();
+    expect(sendSocketEvent).toHaveBeenCalledExactlyOnceWith('end_voting', 'story');
+    await rerender({ votingLocked: true });
+    await expect.element(page.getByTestId('final-calculated-points')).toHaveTextContent('12.83');
+    expect(sendSocketEvent).toHaveBeenCalledTimes(1);
     await page.getByTestId('voting-save').click();
     expect(sendSocketEvent).toHaveBeenCalledWith(
       'finalize_plan',

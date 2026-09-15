@@ -190,16 +190,16 @@ This can be a list of Stories, Bugs, Tasks, etc. and serves as a queue for team 
 
 Premium feature.
 
-#### Automatically write estimates back to Jira
+#### Write saved estimates back to Jira
 
 1. Add a Jira connection under **Profile → Jira Integration** using the authentication method for your installation described above.
-2. As a game facilitator, open **Game Settings → Jira 自动回写**.
-3. Enable automatic writeback and choose your Jira connection. The site's **Story Points** field is selected automatically when it has a unique match; an existing valid field selection is preserved. The account must be allowed to edit that field on the target issues. If Story Points is missing or ambiguous, check the Jira field configuration or select the intended numeric field before saving.
+2. As a game facilitator, open **Game Settings → Jira 点数回写**.
+3. Enable writeback after **Save** and choose your Jira connection. The site's **Story Points** field is selected automatically when it has a unique match; an existing valid field selection is preserved. The account must be allowed to edit that field on the target issues. If Story Points is missing or ambiguous, check the Jira field configuration or select the intended numeric field before saving.
 4. Import stories from Jira, or fill in each story's Jira reference ID and matching issue link. For example, `PROJ-123` and `https://yourjira.atlassian.net/browse/PROJ-123`.
 
-When the configured countdown ends, a facilitator finishes voting, or auto-finish ends the round, the server writes the sum of the testing, frontend, and backend averages. Only numeric votes count toward each average; nonvoters and historical abstentions do not count. Zero is a valid estimate. Calculated totals can exceed the highest individual card. A round with no numeric votes does not overwrite Jira. Legacy single-category voting writes after the facilitator saves its final numeric estimate.
+When the configured countdown ends, a facilitator finishes voting, or auto-finish ends the round, the result is displayed without writing to Jira. Click **Save** below the result to save and queue the sum of the testing, frontend, and backend averages for writeback. Only numeric votes count toward each average; nonvoters and historical abstentions do not count. Zero is a valid estimate. Calculated totals can exceed the highest individual card. A round with no numeric votes cannot be saved and does not overwrite Jira. Legacy single-category voting also writes only after the facilitator saves its final numeric estimate.
 
-The result area shows pending, successful, or failed writeback. The server retries failed requests up to three total attempts, including after a restart. A facilitator can use **重试回写** after fixing account permissions or connection details. The local estimate remains available when Jira is unreachable. Reopening a voting round discards its previous pending task; changing the destination or disabling writeback cancels affected pending tasks. Enabling this feature does not send historical estimates.
+The result area first prompts the facilitator to click Save, then shows pending, successful, or failed writeback. After Save, the server retries failed requests up to three total attempts, including after a restart. A facilitator can use **重试回写** after fixing account permissions or connection details. The local estimate remains available when Jira is unreachable. Reopening a voting round discards its previous task; changing the destination or disabling writeback cancels affected tasks. Enabling this feature does not send historical estimates. Existing unsaved pending or failed tasks wait for Save after upgrading.
 
 Jira connection choices are private to their owner. The game exposes only the issue key, points, and sync status to participants; credentials stay on the server. The existing subscription requirement for Jira integration applies when subscriptions are enabled.
 

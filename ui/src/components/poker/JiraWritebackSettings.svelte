@@ -95,7 +95,7 @@
         body: { enabled: settings.enabled, instanceId: settings.instanceId, fieldId: settings.fieldId },
       });
       if (!res.ok) throw res;
-      notifications.success(settings.enabled ? '已开启 Jira 自动回写。' : '已关闭 Jira 自动回写。');
+      notifications.success(settings.enabled ? '已开启保存评点后回写 Jira。' : '已关闭 Jira 回写。');
       close();
     } catch (error) {
       errorMessage = await jiraErrorMessage(error, '保存 Jira 回写设置失败，请重试。');
@@ -113,12 +113,12 @@
   });
 </script>
 
-<Modal closeModal={close} ariaLabel="Jira 自动回写" widthClasses="md:w-2/3 lg:w-1/2 xl:w-2/5">
+<Modal closeModal={close} ariaLabel="Jira 点数回写" widthClasses="md:w-2/3 lg:w-1/2 xl:w-2/5">
   <form onsubmit={save} class="space-y-5" data-testid="jira-writeback-settings">
     <div>
-      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Jira 自动回写</h2>
+      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Jira 点数回写</h2>
       <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        倒计时结束或手动结束评点后，将测试、前端、后端的平均分之和写入 Jira。
+        评点结束后，点击评点结果下方的 Save，才将测试、前端、后端的平均分之和写入 Jira。
       </p>
     </div>
     {#if loading}
@@ -126,7 +126,7 @@
     {:else}
       <label class="flex items-center gap-3 font-semibold text-gray-800 dark:text-gray-100">
         <input type="checkbox" bind:checked={settings.enabled} disabled={saving} class="w-4 h-4 accent-blue-600" />
-        评点结束后自动回写
+        点击 Save 保存评点后回写
       </label>
       {#if instances.length === 0}
         <p class="text-sm text-gray-600 dark:text-gray-300">
@@ -186,7 +186,8 @@
         </div>
         <p class="text-sm text-gray-600 dark:text-gray-300">
           需求须填写与此实例匹配的 Jira
-          编号和链接。没有有效评分时不回写，失败不会影响本地评点结果。设置适用于之后结束的评点。
+          编号和链接。倒计时结束、手动结束和自动结束均不会直接回写；设置适用于之后点击 Save 保存的评点。
+          没有有效评分时不回写，失败不会影响本地评点结果。
         </p>
       {/if}
     {/if}

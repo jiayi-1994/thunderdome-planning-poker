@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 
 	jiraclient "github.com/StevenWeathers/thunderdome-planning-poker/internal/atlassian/jira"
@@ -97,6 +99,14 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 			t.Fatal(err)
 		}
 	}
+	save := func() *thunderdome.Story {
+		t.Helper()
+		plans, err := poker.FinalizeStory(game, story, "999")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return plans[0]
+	}
 	process := func() *thunderdome.PokerJiraSyncEvent {
 		t.Helper()
 		// Re-create the service to verify tasks survive process restarts.
@@ -108,7 +118,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		return event
 	}
 
-	t.Run("manual completion writes the calculated total once", func(t *testing.T) {
+	t.Run("manual completion waits for Save and writes the confirmed total once", func(t *testing.T) {
 		start()
 		vote(one, "testing", "2")
 		vote(two, "testing", "3")
@@ -118,13 +128,22 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		vote(three, "backend", "8")
 		end()
 		plan := poker.GetStories(game, one)[0]
-		if plan.JiraSync == nil || plan.JiraSync.Status != "pending" {
-			t.Fatal("ending voting did not atomically enqueue Jira writeback")
+		if plan.JiraSync == nil || plan.JiraSync.Status != "awaiting_save" {
+			t.Fatal("ending voting did not wait for Save")
+		}
+		if event := process(); event != nil || len(written) != 0 {
+			t.Fatal("ending voting wrote to Jira before Save")
+		}
+		if err := jira.RetryPokerJiraSync(ctx, game, story); err == nil {
+			t.Fatal("retry bypassed Save")
 		}
 		// Changing attendance after the vote must not alter the result sent or displayed.
 		exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, two)
 		if total := poker.GetStories(game, one)[0].Estimation.Total; total != "12.83" {
 			t.Fatalf("revealed result changed after attendance update: %s", total)
+		}
+		if plan := save(); plan.Points != "12.83" || plan.JiraSync == nil || plan.JiraSync.Status != "pending" {
+			t.Fatal("Save did not atomically queue the confirmed total")
 		}
 		event := process()
 		if event == nil || event.Sync.Status != "succeeded" || event.Sync.Points != "12.83" || len(written) != 1 || written[0] != 12.83 {
@@ -133,25 +152,109 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		if next := process(); next != nil {
 			t.Fatal("successful writeback was duplicated")
 		}
-		finalized, err := poker.FinalizeStory(game, story, "999")
-		if err != nil || finalized[0].Points != "12.83" {
-			t.Fatal("saved local result differs from Jira snapshot", err)
+		if _, err := poker.FinalizeStory(game, story, "999"); err == nil {
+			t.Fatal("a duplicate Save was accepted")
 		}
 		if next := process(); next != nil {
 			t.Fatal("saving the same total resent the Jira update")
 		}
 	})
 
-	t.Run("countdown completion excludes nonvoters", func(t *testing.T) {
+	t.Run("countdown completion waits for Save and excludes nonvoters", func(t *testing.T) {
 		start()
 		vote(one, "testing", "5")
 		exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '121 seconds' WHERE id = $1`, story)
 		if _, err := poker.EndExpiredStoryVoting(ctx); err != nil {
 			t.Fatal(err)
 		}
+		if event := process(); event != nil {
+			t.Fatal("countdown expiry wrote to Jira before Save")
+		}
+		save()
 		event := process()
 		if event == nil || event.Sync.Points != "5" || event.Sync.Status != "succeeded" || written[len(written)-1] != 5 {
 			t.Fatalf("countdown did not write partial participation total: %+v", event)
+		}
+	})
+
+	t.Run("automatic completion still requires Save", func(t *testing.T) {
+		users := poker.GetUsers(game)
+		defer func() {
+			for _, user := range users {
+				exec(`UPDATE thunderdome.poker_user SET spectator = $2 WHERE poker_id = $3 AND user_id = $1`, user.ID, user.Spectator, game)
+			}
+		}()
+		exec(`UPDATE thunderdome.poker_user SET spectator = (user_id <> $1) WHERE poker_id = $2`, one, game)
+		start()
+		if _, allVoted, err := poker.SetVote(game, one, story, "3", "testing"); err != nil || !allVoted {
+			t.Fatal("automatic completion condition was not met", err)
+		}
+		// The WebSocket auto-finish handler uses this same completion operation.
+		end()
+		if event := process(); event != nil {
+			t.Fatal("automatic completion wrote to Jira before Save")
+		}
+		save()
+		if event := process(); event == nil || event.Sync.Points != "3" || event.Sync.Status != "succeeded" {
+			t.Fatal("Save did not write the auto-finished estimate")
+		}
+	})
+
+	t.Run("legacy final point selection also requires Save", func(t *testing.T) {
+		start()
+		vote(one, "", "3")
+		end()
+		if event := process(); event != nil {
+			t.Fatal("legacy completion wrote to Jira before Save")
+		}
+		if _, err := poker.FinalizeStory(game, story, "5"); err != nil {
+			t.Fatal(err)
+		}
+		if event := process(); event == nil || event.Sync.Points != "5" || event.Sync.Status != "succeeded" {
+			t.Fatal("legacy Save did not write the selected points")
+		}
+	})
+
+	t.Run("upgrade parks unsaved work and guards processing and retry", func(t *testing.T) {
+		migration, err := os.ReadFile("../migrations/20260915150000_require_save_for_jira_writeback.sql")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, status := range []string{"pending", "failed"} {
+			start()
+			vote(one, "testing", "2")
+			end()
+			// Simulate a task left by the old automatic completion trigger.
+			exec(`UPDATE thunderdome.poker_jira_sync SET status = $2, attempts = 2 WHERE story_id = $1`, story, status)
+			if event := process(); event != nil {
+				t.Fatal("worker accepted an unsaved legacy task")
+			}
+			if err := jira.RetryPokerJiraSync(ctx, game, story); err == nil {
+				t.Fatal("retry accepted an unsaved legacy task")
+			}
+			exec(strings.Split(string(migration), "-- +goose Down")[0])
+			plan := poker.GetStories(game, one)[0]
+			if plan.JiraSync == nil || plan.JiraSync.Status != "awaiting_save" || plan.JiraSync.Attempts != 0 {
+				t.Fatal("upgrade did not park the old task")
+			}
+			if event := process(); event != nil {
+				t.Fatal("upgraded task ran before Save")
+			}
+			save()
+			if event := process(); event == nil || event.Sync.Status != "succeeded" || event.Sync.Points != "2" {
+				t.Fatal("upgraded task did not run after Save")
+			}
+		}
+		start()
+		vote(one, "testing", "2")
+		end()
+		exec(`UPDATE thunderdome.poker_jira_sync SET status = 'succeeded', points = '2', attempts = 1 WHERE story_id = $1`, story)
+		exec(strings.Split(string(migration), "-- +goose Down")[0])
+		if plan := save(); plan.JiraSync.Status != "succeeded" {
+			t.Fatal("upgrade discarded a previously successful write")
+		}
+		if event := process(); event != nil {
+			t.Fatal("Save duplicated the same successful pre-upgrade write")
 		}
 	})
 
@@ -159,6 +262,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		start()
 		vote(one, "testing", "8")
 		end()
+		save()
 		start()
 		if event := process(); event != nil {
 			t.Fatal("a previous round wrote after restart")
@@ -168,6 +272,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		}
 		vote(one, "testing", "2")
 		end()
+		save()
 		if event := process(); event == nil || event.Sync.Points != "2" {
 			t.Fatalf("new round was not written: %+v", event)
 		}
@@ -177,6 +282,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		start()
 		vote(one, "testing", "0")
 		end()
+		save()
 		if event := process(); event == nil || event.Sync.Status != "succeeded" || written[len(written)-1] != 0 {
 			t.Fatal("numeric zero was not written")
 		}
@@ -185,7 +291,10 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		// Historical abstentions must still be handled safely after removing the card.
 		exec(`UPDATE thunderdome.poker_story SET votes = jsonb_build_array(jsonb_build_object('warriorId', $2::text, 'category', 'testing', 'vote', '?')) WHERE id = $1`, story, one)
 		end()
-		if event := process(); event == nil || event.Sync.Status != "skipped" || len(written) != count {
+		if _, err := poker.FinalizeStory(game, story, "0"); err == nil {
+			t.Fatal("Save accepted a round without numeric votes")
+		}
+		if event := process(); event != nil || len(written) != count {
 			t.Fatal("abstention overwrote Jira")
 		}
 		start()
@@ -199,6 +308,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		start()
 		vote(one, "testing", "8")
 		end()
+		save()
 		for attempt := 1; attempt <= 3; attempt++ {
 			event, err := jira.ProcessPokerJiraSync(ctx, func(_ context.Context, _ thunderdome.JiraInstance, write thunderdome.PokerJiraWrite) error {
 				if write.Points != "8" {
@@ -241,6 +351,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		start()
 		vote(one, "testing", "8")
 		end()
+		save()
 		settings.Enabled = false
 		if err := jira.SavePokerJiraSettings(ctx, game, one, settings); err != nil {
 			t.Fatal(err)
@@ -257,11 +368,36 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		}
 	})
 
+	t.Run("changing settings while waiting does not send without Save", func(t *testing.T) {
+		start()
+		vote(one, "testing", "5")
+		end()
+		settings.Enabled = false
+		if err := jira.SavePokerJiraSettings(ctx, game, one, settings); err != nil {
+			t.Fatal(err)
+		}
+		if plan := poker.GetStories(game, one)[0]; plan.JiraSync.Status != "cancelled" {
+			t.Fatal("disabling writeback did not cancel the waiting task")
+		}
+		settings.Enabled = true
+		if err := jira.SavePokerJiraSettings(ctx, game, one, settings); err != nil {
+			t.Fatal(err)
+		}
+		if event := process(); event != nil {
+			t.Fatal("settings confirmation bypassed the result Save button")
+		}
+		save()
+		if event := process(); event == nil || event.Sync.Status != "succeeded" || event.Sync.Points != "5" {
+			t.Fatal("explicit Save did not apply the current settings")
+		}
+	})
+
 	t.Run("mismatched Jira link cannot target another issue", func(t *testing.T) {
 		exec(`UPDATE thunderdome.poker_story SET link = $2 WHERE id = $1`, story, server.URL+"/browse/OTHER-2")
 		start()
 		vote(one, "testing", "3")
 		end()
+		save()
 		count := len(written)
 		event := process()
 		if event == nil || event.Sync.Status != "pending" || len(written) != count {
@@ -290,6 +426,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		start()
 		vote(one, "testing", "3")
 		end()
+		save()
 		if _, err := poker.ActivateStoryVoting(game, nextStory); err != nil {
 			t.Fatal(err)
 		}

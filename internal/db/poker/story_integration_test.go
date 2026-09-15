@@ -63,7 +63,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	exec(`INSERT INTO thunderdome.poker(id, end_time, point_values_allowed) VALUES ('00000000-0000-0000-0000-000000000090', now(), ARRAY['1','8','13','?']);
 		INSERT INTO thunderdome.poker_story(id, poker_id, active, points, votes) VALUES ('00000000-0000-0000-0000-000000000091', '00000000-0000-0000-0000-000000000090', false, '13', '[{"warriorId":"old-user","vote":"13","category":"testing"}]');
 		INSERT INTO thunderdome.estimation_scale(id, name, scale_type, values) VALUES ('00000000-0000-0000-0000-000000000050', 'Thunderdome Default', 'thunderdome_default', ARRAY['0','1/2','1','2','3','5','8','13','?']);`)
-	for _, name := range []string{"20230930180117_add_jira_tables.sql", "20250219144939_add_jiradatacenter.sql", "20260911120000_add_poker_jira_writeback.sql", "20260912100000_add_jira_auth_method.sql", "20260915090000_configure_poker_voting.sql"} {
+	for _, name := range []string{"20230930180117_add_jira_tables.sql", "20250219144939_add_jiradatacenter.sql", "20260911120000_add_poker_jira_writeback.sql", "20260912100000_add_jira_auth_method.sql", "20260915090000_configure_poker_voting.sql", "20260915150000_require_save_for_jira_writeback.sql"} {
 		migration, err := os.ReadFile("../migrations/" + name)
 		if err != nil {
 			t.Fatal(err)
@@ -301,6 +301,11 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	t.Run("configurable countdown", func(t *testing.T) { testPokerVotingSettings(t, db, svc) })
 	// Verify the migration is reversible after actual data has been saved.
 	t.Run("Jira writeback", func(t *testing.T) { testPokerJiraWriteback(t, db, svc) })
+	saveMigration, err := os.ReadFile("../migrations/20260915150000_require_save_for_jira_writeback.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec(strings.Split(string(saveMigration), "-- +goose Down")[1])
 	jiraMigration, err := os.ReadFile("../migrations/20260911120000_add_poker_jira_writeback.sql")
 	if err != nil {
 		t.Fatal(err)

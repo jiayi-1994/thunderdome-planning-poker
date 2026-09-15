@@ -58,7 +58,7 @@ export type PokerJiraSettings = {
 };
 
 export type PokerJiraSync = {
-  status: 'pending' | 'succeeded' | 'failed' | 'skipped' | 'cancelled';
+  status: 'awaiting_save' | 'pending' | 'succeeded' | 'failed' | 'skipped' | 'cancelled';
   issueKey: string;
   points: string;
   error?: string;

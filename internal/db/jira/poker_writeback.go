@@ -56,9 +56,9 @@ func (s *Service) SavePokerJiraSettings(ctx context.Context, pokerID, userID str
 	if err != nil {
 		return err
 	}
-	// Settings apply to future voting completions; never silently resend old estimates to a new target.
+	// Settings apply to future saves; never silently resend old estimates to a new target.
 	_, err = tx.ExecContext(ctx, `UPDATE thunderdome.poker_jira_sync j SET status = 'cancelled', updated_at = clock_timestamp()
-		WHERE j.poker_id = $1 AND j.status IN ('pending', 'failed') AND NOT EXISTS (
+		WHERE j.poker_id = $1 AND j.status IN ('awaiting_save', 'pending', 'failed') AND NOT EXISTS (
 			SELECT 1 FROM thunderdome.poker_jira_settings c WHERE c.poker_id = j.poker_id AND c.enabled
 			AND c.instance_id = j.instance_id AND c.field_id = j.field_id AND c.host = j.host
 		)`, pokerID)
@@ -83,7 +83,7 @@ func (s *Service) RetryPokerJiraSync(ctx context.Context, pokerID, storyID strin
 		issue_key = coalesce(s.reference_id, ''), issue_link = coalesce(s.link, '')
 		FROM thunderdome.poker_story s, thunderdome.poker_jira_settings c
 		WHERE j.story_id = $1 AND j.poker_id = $2 AND s.id = j.story_id
-		AND NOT s.active AND NOT s.skipped AND s.votestart_time = j.vote_start_time
+		AND NOT s.active AND NOT s.skipped AND s.points <> '' AND s.votestart_time = j.vote_start_time
 		AND c.poker_id = j.poker_id AND c.enabled AND c.instance_id = j.instance_id
 		AND c.field_id = j.field_id AND c.host = j.host AND j.status = 'failed'`, storyID, pokerID)
 	if err != nil {
@@ -116,7 +116,8 @@ func (s *Service) ProcessPokerJiraSync(ctx context.Context, write func(context.C
 		j.host, j.field_id, j.points, j.votes, j.participants, j.attempts,
 		i.id, i.user_id, i.host, i.client_mail, i.access_token, i.jira_data_center, i.auth_method
 		FROM thunderdome.poker_jira_sync j
-		JOIN thunderdome.poker_story s ON s.id = j.story_id AND s.votestart_time = j.vote_start_time AND NOT s.active AND NOT s.skipped
+		JOIN thunderdome.poker_story s ON s.id = j.story_id AND s.votestart_time = j.vote_start_time
+			AND NOT s.active AND NOT s.skipped AND s.points <> ''
 		JOIN thunderdome.poker_jira_settings c ON c.poker_id = j.poker_id AND c.enabled
 			AND c.instance_id = j.instance_id AND c.field_id = j.field_id AND c.host = j.host
 		JOIN thunderdome.jira_instance i ON i.id = j.instance_id

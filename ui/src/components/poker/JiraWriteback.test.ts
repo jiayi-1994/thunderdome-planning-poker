@@ -32,6 +32,7 @@ describe('Jira writeback settings and status', () => {
       return response({ settings, instances: [{ id: 'jira-one', host: 'https://team.atlassian.net' }] });
     });
     render(JiraWritebackSettings, { gameId: 'game', xfetch, notifications, close });
+    await expect.element(page.getByText('评点结束后，点击评点结果下方的 Save，才将测试、前端、后端的平均分之和写入 Jira。')).toBeVisible();
     await page.getByRole('checkbox').click();
     await expect.element(page.getByTestId('jira-writeback-save')).toBeDisabled();
     await userEvent.selectOptions(page.getByRole('combobox', { name: 'Jira 实例' }), 'jira-one');
@@ -133,6 +134,17 @@ describe('Jira writeback settings and status', () => {
     await expect.element(page.getByRole('option', { name: 'Story Points（customfield_1）' })).not.toBeInTheDocument();
     await expect.element(page.getByRole('combobox', { name: 'Jira 实例' })).toHaveValue('two');
     await expect.element(page.getByRole('combobox', { name: '点数字段' })).toHaveValue('customfield_2');
+  });
+
+  it('waits for Save without issuing a request or offering retry', async () => {
+    const xfetch = vi.fn();
+    render(JiraSyncStatus, {
+      gameId: 'game', storyId: 'story', canRetry: true, xfetch, notifications,
+      sync: { status: 'awaiting_save', issueKey: 'TEST-1', points: '', attempts: 0, updatedAt: '2026-09-15T10:00:00Z' },
+    });
+    await expect.element(page.getByRole('status')).toHaveTextContent('点击 Save 确认分数后回写 Jira。');
+    await expect.element(page.getByTestId('jira-sync-retry')).not.toBeInTheDocument();
+    expect(xfetch).not.toHaveBeenCalled();
   });
 
   it('shows failure without losing points and only offers retry to facilitators', async () => {
