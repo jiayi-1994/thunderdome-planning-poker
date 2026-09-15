@@ -301,6 +301,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	t.Run("configurable countdown", func(t *testing.T) { testPokerVotingSettings(t, db, svc) })
 	// Verify the migration is reversible after actual data has been saved.
 	t.Run("Jira writeback", func(t *testing.T) { testPokerJiraWriteback(t, db, svc) })
+	t.Run("Jira story import", func(t *testing.T) { testPokerStoryImport(t, db, svc) })
 	saveMigration, err := os.ReadFile("../migrations/20260915150000_require_save_for_jira_writeback.sql")
 	if err != nil {
 		t.Fatal(err)

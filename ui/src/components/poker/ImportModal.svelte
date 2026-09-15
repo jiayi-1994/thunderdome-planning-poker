@@ -14,6 +14,7 @@
   import type { NotificationService } from '../../types/notifications';
   import type { ApiClient } from '../../types/apiclient';
   import HollowButton from '../global/HollowButton.svelte';
+  import type { JiraStoryReference } from '../jira/storyIdentity';
 
   interface Props {
     notifications: NotificationService;
@@ -21,6 +22,7 @@
     toggleImport?: any;
     handlePlanAdd?: any;
     gameId?: string;
+    existingStories?: JiraStoryReference[];
   }
 
   let {
@@ -29,6 +31,7 @@
     toggleImport = () => {},
     handlePlanAdd = handleAdd => {},
     gameId = '',
+    existingStories = [],
   }: Props = $props();
 
   let showJiraCloudSearch = $state(false);
@@ -139,6 +142,7 @@
             <JQLImport
               {notifications}
               {xfetch}
+              {existingStories}
               handleImport={importStory}
               on:instance_selected={() => {
                 showJiraCloudSearch = true;

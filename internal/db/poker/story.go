@@ -1,6 +1,7 @@
 package poker
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -104,30 +105,24 @@ func (d *Service) GetStories(pokerID string, userID string) []*thunderdome.Story
 
 // CreateStory adds a new story to the game
 func (d *Service) CreateStory(pokerID string, name string, storyType string, referenceID string, link string, description string, acceptanceCriteria string, priority int32) ([]*thunderdome.Story, error) {
-	sanitizedDescription := d.HTMLSanitizerPolicy.Sanitize(description)
-	sanitizedAcceptanceCriteria := d.HTMLSanitizerPolicy.Sanitize(acceptanceCriteria)
-	// default priority should be 99 for sort order purposes
-	if priority == 0 {
-		priority = 99
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	tx, err := d.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+	if err != nil {
+		return nil, err
 	}
-	if _, err := d.DB.Exec(
-		`INSERT INTO thunderdome.poker_story (
-		poker_id, name, type, reference_id, link, description, acceptance_criteria, priority, position)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (
-      coalesce(
-        (select max(position) from thunderdome.poker_story where poker_id = $1),
-        -1
-      ) + 1
-    ));`,
-		pokerID, name, storyType, referenceID, link, sanitizedDescription, sanitizedAcceptanceCriteria, priority,
-	); err != nil {
-		d.Logger.Error("error creating poker story", zap.Error(err),
-			zap.String("PokerID", pokerID), zap.String("Name", name))
+	defer tx.Rollback()
+	_, err = d.insertStory(ctx, tx, pokerID, &thunderdome.Story{
+		Name: name, Type: storyType, ReferenceID: referenceID, Link: link,
+		Description: description, AcceptanceCriteria: acceptanceCriteria, Priority: priority,
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	stories := d.GetStories(pokerID, "")
-
-	return stories, nil
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return d.GetStories(pokerID, ""), nil
 }
 
 // ActivateStoryVoting sets the story by ID to active, wipes any previous votes/points, and disables votingLock

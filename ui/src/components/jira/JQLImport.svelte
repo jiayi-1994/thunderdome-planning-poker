@@ -11,16 +11,24 @@
   import type { ApiClient } from '../../types/apiclient';
   import type { SessionUser } from '../../types/user';
   import { SearchIcon } from '@lucide/svelte';
+  import { jiraStoryIdentity, type JiraStoryReference } from './storyIdentity';
 
   const dispatch = createEventDispatcher();
 
+  type JiraIssue = {
+    key: string;
+    fields: { summary: string; issuetype: { name: string }; priority?: { name: string } };
+  };
+  type ImportedStory = JiraStoryReference & { name: string; type: string; description: string; priority: number };
+
   interface Props {
-    handleImport?: any;
+    handleImport?: (story: ImportedStory) => void;
     notifications: NotificationService;
     xfetch: ApiClient;
+    existingStories?: JiraStoryReference[];
   }
 
-  let { handleImport = (story: any) => {}, notifications, xfetch }: Props = $props();
+  let { handleImport = () => {}, notifications, xfetch, existingStories = [] }: Props = $props();
 
   // going by common Jira issue types for now
   const planTypes = [
@@ -48,13 +56,24 @@
     },
   ];
 
-  let jiraInstances = $state([]);
-  let jiraStories = $state([]);
+  let jiraInstances = $state<Array<{ id: string; host: string }>>([]);
+  let jiraStories = $state<JiraIssue[]>([]);
   let selectedJiraInstance: string = $state('');
   let searchJQL: string = $state('');
   let jqlError: string = $state('');
-  let importedStoryKeys = $state([]);
+  let importedStoryKeys = $state<string[]>([]);
   let searchCompleted: boolean = $state(false);
+  let searchVersion = 0;
+  let existingKeys = $derived(new Set(existingStories.map(jiraStoryIdentity).filter(Boolean)));
+  let availableStories = $derived.by(() => {
+    const seen = new Set([...existingKeys, ...importedStoryKeys]);
+    return jiraStories.filter(story => {
+      const key = jiraStoryIdentity(toImportStory(story));
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
 
   function getJiraInstances() {
     xfetch(`/api/users/${$user.id}/jira-instances`)
@@ -98,10 +117,10 @@
     }
 
     jiraStories = [];
-    importedStoryKeys = [];
     searchCompleted = false;
+    const version = ++searchVersion;
 
-    xfetch(`/api/users/${$user.id}/jira-instances/${jiraInstances[selectedJiraInstance].id}/jql-story-search`, {
+    xfetch(`/api/users/${$user.id}/jira-instances/${jiraInstances[Number(selectedJiraInstance)].id}/jql-story-search`, {
       body: {
         jql: searchJQL,
         startAt: 0,
@@ -110,13 +129,16 @@
     })
       .then(res => res.json())
       .then(function (result) {
+        if (version !== searchVersion) return;
         jqlError = '';
         jiraStories = result.data.issues;
         searchCompleted = true;
       })
       .catch(function (error) {
+        if (version !== searchVersion) return;
         if (Array.isArray(error)) {
           error[1].json().then(function (result) {
+            if (version !== searchVersion) return;
             if (result.error === 'REQUIRES_SUBSCRIBED_USER') {
               user.update({
                 id: $user.id,
@@ -147,7 +169,7 @@
     return planTypes.includes(type) ? type : 'Story';
   }
 
-  function findPriority(priority) {
+  function findPriority(priority?: string) {
     const found = priorities.find(p => p.name === priority);
     return found ? found.value : 99;
   }
@@ -156,34 +178,27 @@
     return str.endsWith('/') ? str.slice(0, -1) : str;
   }
 
-  function importStory(idx: number) {
-    return function () {
-      const story = jiraStories[idx];
-      handleImport({
-        name: story.fields.summary,
-        type: findPlanType(story.fields.issuetype.name),
-        referenceId: story.key,
-        link: `${stripTrailingSlash(jiraInstances[selectedJiraInstance].host)}/browse/${story.key}`,
-        description: '', // @TODO - get description
-        priority: findPriority(story.fields.priority.name),
-      });
-      importedStoryKeys = [...importedStoryKeys, story.key];
+  function toImportStory(story: JiraIssue): ImportedStory {
+    return {
+      name: story.fields.summary,
+      type: findPlanType(story.fields.issuetype.name),
+      referenceId: story.key,
+      link: `${stripTrailingSlash(jiraInstances[Number(selectedJiraInstance)].host)}/browse/${story.key}`,
+      description: '', // @TODO - get description
+      priority: findPriority(story.fields.priority?.name),
     };
   }
 
+  function importStory(story: JiraIssue) {
+    const plan = toImportStory(story);
+    const key = jiraStoryIdentity(plan);
+    if (!key || existingKeys.has(key) || importedStoryKeys.includes(key)) return;
+    handleImport(plan);
+    importedStoryKeys = [...importedStoryKeys, key];
+  }
+
   function importAllStories() {
-    const storiesToImport = jiraStories.filter(story => !importedStoryKeys.includes(story.key));
-    storiesToImport.forEach(story => {
-      handleImport({
-        name: story.fields.summary,
-        type: findPlanType(story.fields.issuetype.name),
-        referenceId: story.key,
-        link: `${stripTrailingSlash(jiraInstances[selectedJiraInstance].host)}/browse/${story.key}`,
-        description: '', // @TODO - get description
-        priority: findPriority(story.fields.priority.name),
-      });
-      importedStoryKeys = [...importedStoryKeys, story.key];
-    });
+    availableStories.forEach(importStory);
   }
 
   onMount(() => {
@@ -207,6 +222,10 @@
         id="jirainstance"
         bind:value={selectedJiraInstance}
         onchange={() => {
+          searchVersion++;
+          jiraStories = [];
+          jqlError = '';
+          searchCompleted = false;
           dispatch('instance_selected');
         }}
       >
@@ -245,28 +264,24 @@
         {#if searchCompleted && jiraStories.length === 0 && jqlError === ''}
           <p class="no-stories-message">No stories found for this JQL query.</p>
         {/if}
-        {#if jiraStories.length > 0 && importedStoryKeys.length === jiraStories.length}
+        {#if jiraStories.length > 0 && availableStories.length === 0}
           <p class="all-imported-message">All stories have been imported!</p>
         {/if}
-        {#if jiraStories.length > 0 && importedStoryKeys.length < jiraStories.length}
+        {#if availableStories.length > 0}
           <div class="search-result-header">
             <span class="text-lg font-semibold">
-              Search Results {jiraStories.length > 0 ? `(${jiraStories.length - importedStoryKeys.length})` : ''}
+              Search Results ({availableStories.length})
             </span>
             <SolidButton onClick={importAllStories}>Import All</SolidButton>
           </div>
         {/if}
-        {#each jiraStories as story, idx}
-          <div
-            class="story-item"
-            class:hidden={importedStoryKeys.includes(story.key)}
-            aria-hidden={importedStoryKeys.includes(story.key)}
-          >
+        {#each availableStories as story}
+          <div class="story-item">
             <div>
               [{story.key}] {story.fields.summary}
             </div>
             <div>
-              <SolidButton onClick={importStory(idx)}>Import</SolidButton>
+              <SolidButton onClick={() => importStory(story)}>Import</SolidButton>
             </div>
           </div>
         {/each}
@@ -411,15 +426,4 @@
     color: white;
   }
 
-  .story-item.hidden {
-    pointer-events: none;
-    max-height: 0;
-    padding: 0;
-    overflow: hidden;
-    margin-bottom: 0;
-    transition:
-      padding 200ms ease-out,
-      max-height 200ms ease-out,
-      margin-bottom 200ms ease-out;
-  }
 </style>

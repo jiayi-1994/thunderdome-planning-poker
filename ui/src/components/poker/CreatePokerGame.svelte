@@ -13,6 +13,7 @@
   import SelectWithSubtext from '../forms/SelectWithSubtext.svelte';
   import { validateUserIsAdmin } from '../../validationUtils';
   import { availablePokerPoints } from './pointValues';
+  import { jiraStoryIdentity } from '../jira/storyIdentity';
   import { Crown, Lock } from '@lucide/svelte';
 
   import type { NotificationService } from '../../types/notifications';
@@ -74,6 +75,8 @@
   }
 
   function handlePlanImport(newPlan) {
+    const identity = jiraStoryIdentity(newPlan);
+    if (identity && plans.some(plan => jiraStoryIdentity(plan) === identity)) return;
     const plan = {
       name: newPlan.planName,
       type: newPlan.type,
@@ -415,7 +418,7 @@
         {$LL.addPlan()}
       </HollowButton>
       {#if showImport}
-        <ImportModal {notifications} {toggleImport} handlePlanAdd={handlePlanImport} {xfetch} />
+        <ImportModal {notifications} {toggleImport} handlePlanAdd={handlePlanImport} {xfetch} existingStories={plans} />
       {/if}
     </div>
 

@@ -190,6 +190,8 @@ This can be a list of Stories, Bugs, Tasks, etc. and serves as a queue for team 
 
 Premium feature.
 
+JQL imports exclude issues already in the meeting, including stories that have been estimated. Repeat searches, reopening the importer, duplicate search results and simultaneous imports add each Jira issue only once per meeting. Issues are identified by the Jira base URL (including its context path) and issue key; the same key on another Jira instance remains a separate story. Existing names, votes and points are preserved. The same check applies to the initial stories when creating a meeting and to Jira XML imports. Existing duplicate rows are not removed automatically.
+
 #### Write saved estimates back to Jira
 
 When you create a personal, team, or project poker game, Jira writeback is enabled automatically if your account has exactly one Jira connection with exactly one numeric **Story Points** field (case-insensitive name, ignoring surrounding whitespace). New games without a configured Jira connection keep writeback disabled. Initialization only reads field metadata; Jira points are written only after **Save** (保存). Existing games and manually disabled settings are not changed.

@@ -445,5 +445,5 @@
 {/if}
 
 {#if showImport}
-  <ImportModal {notifications} {toggleImport} {handlePlanAdd} {xfetch} {gameId} />
+  <ImportModal {notifications} {toggleImport} {handlePlanAdd} {xfetch} {gameId} existingStories={plans} />
 {/if}

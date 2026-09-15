@@ -66,7 +66,7 @@ func (d *Service) CreateGame(ctx context.Context, facilitatorID string, name str
 
 	tx, err := d.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
-		d.Logger.Error("create poker error", zap.Error(err))
+		return nil, fmt.Errorf("begin poker game: %w", err)
 	}
 
 	defer tx.Rollback()
@@ -106,42 +106,19 @@ func (d *Service) CreateGame(ctx context.Context, facilitatorID string, name str
 		return nil, fmt.Errorf("failed to insert into poker_user table: %v", err)
 	}
 
-	if commitErr := tx.Commit(); commitErr != nil {
-		d.Logger.Error("update drivers: unable to commit", zap.Error(commitErr))
-		return nil, fmt.Errorf("failed to create poker game: %v", commitErr)
-	}
-
 	for _, story := range stories {
-		story.Votes = make([]*thunderdome.Vote, 0)
-		priority := story.Priority
-		// default priority should be 99 for sort order purposes
-		if priority == 0 {
-			priority = 99
+		created, err := d.insertStory(ctx, tx, b.ID, story)
+		if err != nil {
+			return nil, fmt.Errorf("create poker stories: %w", err)
 		}
-
-		e := d.DB.QueryRowContext(ctx,
-			`INSERT INTO thunderdome.poker_story (poker_id, name, type, reference_id, link, description, acceptance_criteria, priority, position)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (
-					  coalesce(
-						(select max(position) from thunderdome.poker_story where poker_id = $1),
-						-1
-					  ) + 1
-					)) RETURNING id`,
-			b.ID,
-			story.Name,
-			story.Type,
-			story.ReferenceID,
-			story.Link,
-			story.Description,
-			story.AcceptanceCriteria,
-			priority,
-		).Scan(&story.ID)
-		if e != nil {
-			d.Logger.Error("insert stories error", zap.Error(e))
+		if created {
+			story.Votes = make([]*thunderdome.Vote, 0)
+			b.Stories = append(b.Stories, story)
 		}
 	}
-
-	b.Stories = stories
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit poker game: %w", err)
+	}
 
 	return b, nil
 }
@@ -187,8 +164,9 @@ func (d *Service) TeamCreateGame(ctx context.Context, teamID string, facilitator
 
 	tx, err := d.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
-		d.Logger.Error("create poker error", zap.Error(err))
+		return nil, fmt.Errorf("begin poker game: %w", err)
 	}
+	defer tx.Rollback()
 
 	// Insert into poker table
 	err = tx.QueryRowContext(ctx, `
@@ -231,42 +209,19 @@ func (d *Service) TeamCreateGame(ctx context.Context, teamID string, facilitator
 		return nil, fmt.Errorf("failed to insert into poker_user table: %v", err)
 	}
 
-	if commitErr := tx.Commit(); commitErr != nil {
-		d.Logger.Error("update drivers: unable to commit", zap.Error(commitErr))
-		return nil, fmt.Errorf("failed to create poker game: %v", commitErr)
-	}
-
 	for _, story := range stories {
-		story.Votes = make([]*thunderdome.Vote, 0)
-		priority := story.Priority
-		// default priority should be 99 for sort order purposes
-		if priority == 0 {
-			priority = 99
+		created, err := d.insertStory(ctx, tx, b.ID, story)
+		if err != nil {
+			return nil, fmt.Errorf("create poker stories: %w", err)
 		}
-
-		e := d.DB.QueryRowContext(ctx,
-			`INSERT INTO thunderdome.poker_story (poker_id, name, type, reference_id, link, description, acceptance_criteria, priority, position)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (
-					  coalesce(
-						(select max(position) from thunderdome.poker_story where poker_id = $1),
-						-1
-					  ) + 1
-					)) RETURNING id`,
-			b.ID,
-			story.Name,
-			story.Type,
-			story.ReferenceID,
-			story.Link,
-			story.Description,
-			story.AcceptanceCriteria,
-			priority,
-		).Scan(&story.ID)
-		if e != nil {
-			d.Logger.Error("insert stories error", zap.Error(e))
+		if created {
+			story.Votes = make([]*thunderdome.Vote, 0)
+			b.Stories = append(b.Stories, story)
 		}
 	}
-
-	b.Stories = stories
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit poker game: %w", err)
+	}
 
 	return b, nil
 }

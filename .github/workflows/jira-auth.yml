@@ -29,6 +29,8 @@ on:
       - 'ui/src/components/poker/CategoryVoting*'
       - 'ui/src/components/poker/categoryEstimation.ts'
       - 'ui/src/components/poker/JiraSyncStatus.svelte'
+      - 'ui/src/components/poker/ImportModal.svelte'
+      - 'ui/src/components/poker/PokerStories.svelte'
       - 'ui/src/components/poker/pointValues.ts'
       - 'ui/src/pages/poker/PokerGame.svelte'
       - 'ui/src/i18n/**'
