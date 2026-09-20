@@ -71,9 +71,9 @@
   <div>
     <!-- Header -->
     <div class="mb-8">
-      <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Import Stories</h2>
+      <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">{$LL.importPlans()}</h2>
       <p class="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-        Choose your preferred method to import poker planning stories
+        {$LL.importStoriesUI.description()}
       </p>
     </div>
 
@@ -87,19 +87,19 @@
             <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
               <DownloadCloud class="w-4 h-4 text-white" />
             </div>
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Internal Import</h3>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{$LL.importStoriesUI.internalImport()}</h3>
           </div>
 
           {#if AppConfig.SubscriptionsEnabled && !$user.subscribed}
-            <FeatureSubscribeBanner salesPitch="Import stories from other Poker Plannings or Storyboards." />
+            <FeatureSubscribeBanner salesPitch={$LL.importStoriesUI.subscriptionDescription()} />
           {:else if !AppConfig.SubscriptionsEnabled || (AppConfig.SubscriptionsEnabled && $user.subscribed)}
             {#if !showGameImport && !showStoryboardImport}
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <HollowButton fullWidth={true} size="large" color="blue" onClick={toggleGameImport}>
-                  Import from Game
+                  {$LL.importStoriesUI.fromGame()}
                 </HollowButton>
                 <HollowButton fullWidth={true} size="large" color="purple" onClick={toggleStoryboardImport}>
-                  Import from Storyboard
+                  {$LL.importStoriesUI.fromStoryboard()}
                 </HollowButton>
               </div>
             {/if}
@@ -135,7 +135,7 @@
             <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               <FileText class="w-4 h-4 text-white" />
             </div>
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Import from Jira Cloud</h3>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{$LL.importStoriesUI.fromJiraCloud()}</h3>
           </div>
 
           <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
@@ -162,7 +162,7 @@
               <div class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
                 <FilePlus class="w-4 h-4 text-white" />
               </div>
-              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">File Import</h3>
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{$LL.importStoriesUI.fileImport()}</h3>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -178,7 +178,7 @@
                     {$LL.importJiraXML()}
                   </h4>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 mb-4 flex-grow">Import stories from Jira XML export files</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-4 flex-grow">{$LL.importStoriesUI.jiraXmlDescription()}</p>
                 <div class="mt-auto">
                   <JiraImport handlePlanAdd={handleAdd} {notifications} />
                 </div>
@@ -199,13 +199,16 @@
 
                 <div class="mb-4 flex-grow">
                   <p class="text-gray-600 dark:text-gray-400 mb-3">
-                    CSV file must include these fields (header row optional):
+                    {$LL.importStoriesUI.csvDescription()}
                   </p>
                   <div class="bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700">
                     <code class="text-gray-700 dark:text-gray-300 break-all">
                       Type,Title,ReferenceId,Link,Description,AcceptanceCriteria
                     </code>
                   </div>
+                  <p class="text-gray-600 dark:text-gray-400 mt-3 text-sm">
+                    {$LL.importStoriesUI.csvFieldsDescription()}
+                  </p>
                 </div>
 
                 <div class="mt-auto">

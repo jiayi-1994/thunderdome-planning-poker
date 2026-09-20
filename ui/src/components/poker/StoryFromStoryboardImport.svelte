@@ -37,7 +37,7 @@
 
   function getStoryboardStories() {
     if (selectedStoryboardIdx === '') {
-      notifications.danger('Storyboard not selected');
+      notifications.danger($LL.importStoriesUI.storyboardNotSelected());
       return;
     }
     const storyboardId = storyboards[selectedStoryboardIdx].id;
@@ -72,7 +72,7 @@
 
 <div class="mb-4">
   <SelectInput id="selectedStoryboard" bind:value={selectedStoryboardIdx} onchange={getStoryboardStories}>
-    <option value="" disabled>Select storyboard to import from</option>
+    <option value="" disabled>{$LL.importStoriesUI.selectStoryboard()}</option>
     {#each storyboards as storyboard, idx}
       <option value={idx}>{storyboard.name}</option>
     {/each}
@@ -86,7 +86,7 @@
     onchange={getStoryboardStories}
     disabled={selectedStoryboardIdx === ''}
   >
-    <option value="" disabled>Select goal to import from</option>
+    <option value="" disabled>{$LL.importStoriesUI.selectGoal()}</option>
     {#if selectedStoryboardIdx !== ''}
       {#each storyboard.goals as goal, idx}
         <option value={idx}>{goal.name}</option>
@@ -107,7 +107,7 @@
               {story.name}
             </div>
             <div>
-              <SolidButton onClick={importStory(cIdx, sIdx)}>Import</SolidButton>
+              <SolidButton onClick={importStory(cIdx, sIdx)}>{$LL.importStoriesUI.importStory()}</SolidButton>
             </div>
           </div>
         {/if}

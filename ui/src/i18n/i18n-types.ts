@@ -792,6 +792,80 @@ type RootTranslation = {
 	 * H​o​s​t​e​d​ ​s​e​r​v​i​c​e​ ​o​r​ ​s​e​l​f​-​h​o​s​t​e​d
 	 */
 	hostedOrSelfHosted: string
+	importStoriesUI: {
+		/**
+		 * C​h​o​o​s​e​ ​y​o​u​r​ ​p​r​e​f​e​r​r​e​d​ ​m​e​t​h​o​d​ ​t​o​ ​i​m​p​o​r​t​ ​p​l​a​n​n​i​n​g​ ​p​o​k​e​r​ ​s​t​o​r​i​e​s
+		 */
+		description: string
+		/**
+		 * I​n​t​e​r​n​a​l​ ​I​m​p​o​r​t
+		 */
+		internalImport: string
+		/**
+		 * I​m​p​o​r​t​ ​s​t​o​r​i​e​s​ ​f​r​o​m​ ​o​t​h​e​r​ ​P​l​a​n​n​i​n​g​ ​P​o​k​e​r​ ​s​e​s​s​i​o​n​s​ ​o​r​ ​S​t​o​r​y​b​o​a​r​d​s​.
+		 */
+		subscriptionDescription: string
+		/**
+		 * I​m​p​o​r​t​ ​f​r​o​m​ ​G​a​m​e
+		 */
+		fromGame: string
+		/**
+		 * I​m​p​o​r​t​ ​f​r​o​m​ ​S​t​o​r​y​b​o​a​r​d
+		 */
+		fromStoryboard: string
+		/**
+		 * I​m​p​o​r​t​ ​f​r​o​m​ ​J​i​r​a​ ​C​l​o​u​d
+		 */
+		fromJiraCloud: string
+		/**
+		 * F​i​l​e​ ​I​m​p​o​r​t
+		 */
+		fileImport: string
+		/**
+		 * I​m​p​o​r​t​ ​s​t​o​r​i​e​s​ ​f​r​o​m​ ​J​i​r​a​ ​X​M​L​ ​e​x​p​o​r​t​ ​f​i​l​e​s
+		 */
+		jiraXmlDescription: string
+		/**
+		 * C​S​V​ ​f​i​l​e​s​ ​m​u​s​t​ ​i​n​c​l​u​d​e​ ​t​h​e​s​e​ ​f​i​e​l​d​s​ ​i​n​ ​o​r​d​e​r​ ​(​h​e​a​d​e​r​ ​r​o​w​ ​o​p​t​i​o​n​a​l​)​:
+		 */
+		csvDescription: string
+		/**
+		 * T​h​e​ ​f​i​e​l​d​s​ ​a​r​e​ ​t​y​p​e​,​ ​t​i​t​l​e​,​ ​r​e​f​e​r​e​n​c​e​ ​I​D​,​ ​l​i​n​k​,​ ​d​e​s​c​r​i​p​t​i​o​n​,​ ​a​n​d​ ​a​c​c​e​p​t​a​n​c​e​ ​c​r​i​t​e​r​i​a​.​ ​I​f​ ​a​ ​h​e​a​d​e​r​ ​r​o​w​ ​i​s​ ​i​n​c​l​u​d​e​d​,​ ​u​s​e​ ​t​h​e​ ​E​n​g​l​i​s​h​ ​f​i​e​l​d​ ​n​a​m​e​s​ ​s​h​o​w​n​ ​a​b​o​v​e​.
+		 */
+		csvFieldsDescription: string
+		/**
+		 * S​e​l​e​c​t​ ​g​a​m​e​ ​t​o​ ​i​m​p​o​r​t​ ​f​r​o​m
+		 */
+		selectGame: string
+		/**
+		 * S​e​l​e​c​t​ ​s​t​o​r​y​b​o​a​r​d​ ​t​o​ ​i​m​p​o​r​t​ ​f​r​o​m
+		 */
+		selectStoryboard: string
+		/**
+		 * S​e​l​e​c​t​ ​g​o​a​l​ ​t​o​ ​i​m​p​o​r​t​ ​f​r​o​m
+		 */
+		selectGoal: string
+		/**
+		 * G​a​m​e​ ​n​o​t​ ​s​e​l​e​c​t​e​d
+		 */
+		gameNotSelected: string
+		/**
+		 * S​t​o​r​y​b​o​a​r​d​ ​n​o​t​ ​s​e​l​e​c​t​e​d
+		 */
+		storyboardNotSelected: string
+		/**
+		 * I​m​p​o​r​t
+		 */
+		importStory: string
+		/**
+		 * S​u​b​s​c​r​i​b​e​ ​n​o​w
+		 */
+		subscribeNow: string
+		/**
+		 * N​e​w​:
+		 */
+		newFeature: string
+	}
 	/**
 	 * I​m​p​o​r​t​ ​s​t​o​r​i​e​s​ ​f​r​o​m​ ​a​ ​C​S​V​ ​f​i​l​e
 	 */
@@ -3302,6 +3376,128 @@ type RootTranslation = {
 	 * J​i​r​a​ ​S​t​o​r​y​ ​P​o​i​n​t​s​ ​w​r​i​t​e​b​a​c​k​ ​i​s​ ​e​n​a​b​l​e​d​.​ ​P​o​i​n​t​s​ ​a​r​e​ ​w​r​i​t​t​e​n​ ​o​n​l​y​ ​a​f​t​e​r​ ​y​o​u​ ​c​l​i​c​k​ ​S​a​v​e​.
 	 */
 	jiraWritebackAutoEnabled: string
+	jiraImportUI: {
+		/**
+		 * I​m​p​o​r​t​ ​y​o​u​r​ ​s​t​o​r​i​e​s​ ​f​o​r​ ​P​o​k​e​r​ ​P​l​a​n​n​i​n​g​ ​f​r​o​m​ ​J​i​r​a​.
+		 */
+		subscriptionPitch: string
+		/**
+		 * Y​o​u​r​ ​s​u​b​s​c​r​i​p​t​i​o​n​ ​h​a​s​ ​e​x​p​i​r​e​d​.
+		 */
+		subscriptionExpired: string
+		/**
+		 * F​a​i​l​e​d​ ​t​o​ ​g​e​t​ ​J​i​r​a​ ​i​n​s​t​a​n​c​e​s​.
+		 */
+		instancesError: string
+		/**
+		 * S​e​t​ ​u​p​ ​a​ ​J​i​r​a​ ​i​n​s​t​a​n​c​e​ ​o​n​ ​y​o​u​r​ ​p​r​o​f​i​l​e​ ​p​a​g​e​ ​t​o​ ​i​m​p​o​r​t​ ​s​t​o​r​i​e​s​.
+		 */
+		setupPrompt: string
+		/**
+		 * O​p​e​n​ ​p​r​o​f​i​l​e​ ​p​a​g​e
+		 */
+		profilePage: string
+		/**
+		 * S​e​l​e​c​t​ ​J​i​r​a​ ​I​n​s​t​a​n​c​e​ ​t​o​ ​i​m​p​o​r​t​ ​f​r​o​m
+		 */
+		selectInstance: string
+		/**
+		 * S​e​a​r​c​h​ ​J​Q​L
+		 */
+		searchLabel: string
+		/**
+		 * E​n​t​e​r​ ​S​e​a​r​c​h​ ​J​Q​L​.​.​.
+		 */
+		queryPlaceholder: string
+		/**
+		 * E​n​t​e​r​ ​a​ ​J​Q​L​ ​q​u​e​r​y​,​ ​f​o​r​ ​e​x​a​m​p​l​e​:​ ​o​r​d​e​r​ ​b​y​ ​c​r​e​a​t​e​d​ ​D​E​S​C
+		 */
+		queryRequired: string
+		/**
+		 * S​e​a​r​c​h
+		 */
+		search: string
+		/**
+		 * S​e​a​r​c​h​i​n​g​.​.​.
+		 */
+		searching: string
+		/**
+		 * F​e​t​c​h​i​n​g​ ​s​t​o​r​i​e​s​ ​f​r​o​m​ ​J​i​r​a​.​ ​L​a​r​g​e​ ​r​e​s​u​l​t​ ​s​e​t​s​ ​m​a​y​ ​t​a​k​e​ ​a​ ​w​h​i​l​e​;​ ​p​l​e​a​s​e​ ​w​a​i​t​.
+		 */
+		searchingHint: string
+		/**
+		 * J​i​r​a​ ​s​e​a​r​c​h​ ​f​a​i​l​e​d​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​.
+		 */
+		searchError: string
+		/**
+		 * J​i​r​a​ ​J​Q​L​ ​S​e​a​r​c​h​ ​E​r​r​o​r​:​ ​{​e​r​r​o​r​}
+		 * @param {unknown} error
+		 */
+		searchErrorDetails: RequiredParams<'error'>
+		/**
+		 * N​o​ ​s​t​o​r​i​e​s​ ​f​o​u​n​d​ ​f​o​r​ ​t​h​i​s​ ​J​Q​L​ ​q​u​e​r​y​.
+		 */
+		noStories: string
+		/**
+		 * A​l​l​ ​s​t​o​r​i​e​s​ ​h​a​v​e​ ​b​e​e​n​ ​i​m​p​o​r​t​e​d​!
+		 */
+		allImported: string
+		/**
+		 * S​e​a​r​c​h​ ​R​e​s​u​l​t​s​ ​(​{​c​o​u​n​t​}​)
+		 * @param {unknown} count
+		 */
+		searchResults: RequiredParams<'count'>
+		/**
+		 * I​m​p​o​r​t​ ​A​l​l
+		 */
+		importAll: string
+		/**
+		 * I​m​p​o​r​t
+		 */
+		importStory: string
+		/**
+		 * C​o​m​m​o​n​ ​J​Q​L​ ​c​o​n​d​i​t​i​o​n​s
+		 */
+		commonConditions: string
+		/**
+		 * R​e​p​l​a​c​e​ ​e​x​a​m​p​l​e​ ​v​a​l​u​e​s​ ​w​i​t​h​ ​y​o​u​r​ ​J​i​r​a​ ​v​a​l​u​e​s​.​ ​S​p​r​i​n​t​ ​a​c​c​e​p​t​s​ ​a​ ​n​a​m​e​ ​o​r​ ​I​D​.​ ​C​o​m​b​i​n​e​ ​c​o​n​d​i​t​i​o​n​s​ ​w​i​t​h​ ​A​N​D​ ​a​n​d​ ​p​u​t​ ​O​R​D​E​R​ ​B​Y​ ​l​a​s​t​.
+		 */
+		examplesHint: string
+		/**
+		 * C​o​m​b​i​n​e​d​ ​e​x​a​m​p​l​e
+		 */
+		combinedExample: string
+		examples: {
+			/**
+			 * S​p​e​c​i​f​i​c​ ​s​p​r​i​n​t
+			 */
+			sprint: string
+			/**
+			 * A​c​t​i​v​e​ ​s​p​r​i​n​t​s
+			 */
+			activeSprint: string
+			/**
+			 * P​r​o​j​e​c​t​ ​k​e​y
+			 */
+			project: string
+			/**
+			 * A​s​s​i​g​n​e​d​ ​t​o​ ​t​h​e​ ​c​o​n​n​e​c​t​e​d​ ​J​i​r​a​ ​a​c​c​o​u​n​t
+			 */
+			assignee: string
+			/**
+			 * S​t​a​t​u​s
+			 */
+			status: string
+			/**
+			 * I​s​s​u​e​ ​t​y​p​e
+			 */
+			issueType: string
+			/**
+			 * U​p​d​a​t​e​d​ ​i​n​ ​t​h​e​ ​l​a​s​t​ ​7​ ​d​a​y​s
+			 */
+			updated: string
+		}
+	}
 }
 
 export type TranslationFunctions = {
@@ -4069,6 +4265,80 @@ export type TranslationFunctions = {
 	 * Hosted service or self-hosted
 	 */
 	hostedOrSelfHosted: () => LocalizedString
+	importStoriesUI: {
+		/**
+		 * Choose your preferred method to import planning poker stories
+		 */
+		description: () => LocalizedString
+		/**
+		 * Internal Import
+		 */
+		internalImport: () => LocalizedString
+		/**
+		 * Import stories from other Planning Poker sessions or Storyboards.
+		 */
+		subscriptionDescription: () => LocalizedString
+		/**
+		 * Import from Game
+		 */
+		fromGame: () => LocalizedString
+		/**
+		 * Import from Storyboard
+		 */
+		fromStoryboard: () => LocalizedString
+		/**
+		 * Import from Jira Cloud
+		 */
+		fromJiraCloud: () => LocalizedString
+		/**
+		 * File Import
+		 */
+		fileImport: () => LocalizedString
+		/**
+		 * Import stories from Jira XML export files
+		 */
+		jiraXmlDescription: () => LocalizedString
+		/**
+		 * CSV files must include these fields in order (header row optional):
+		 */
+		csvDescription: () => LocalizedString
+		/**
+		 * The fields are type, title, reference ID, link, description, and acceptance criteria. If a header row is included, use the English field names shown above.
+		 */
+		csvFieldsDescription: () => LocalizedString
+		/**
+		 * Select game to import from
+		 */
+		selectGame: () => LocalizedString
+		/**
+		 * Select storyboard to import from
+		 */
+		selectStoryboard: () => LocalizedString
+		/**
+		 * Select goal to import from
+		 */
+		selectGoal: () => LocalizedString
+		/**
+		 * Game not selected
+		 */
+		gameNotSelected: () => LocalizedString
+		/**
+		 * Storyboard not selected
+		 */
+		storyboardNotSelected: () => LocalizedString
+		/**
+		 * Import
+		 */
+		importStory: () => LocalizedString
+		/**
+		 * Subscribe now
+		 */
+		subscribeNow: () => LocalizedString
+		/**
+		 * New:
+		 */
+		newFeature: () => LocalizedString
+	}
 	/**
 	 * Import stories from a CSV file
 	 */
@@ -6539,6 +6809,126 @@ export type TranslationFunctions = {
 	 * Jira Story Points writeback is enabled. Points are written only after you click Save.
 	 */
 	jiraWritebackAutoEnabled: () => LocalizedString
+	jiraImportUI: {
+		/**
+		 * Import your stories for Poker Planning from Jira.
+		 */
+		subscriptionPitch: () => LocalizedString
+		/**
+		 * Your subscription has expired.
+		 */
+		subscriptionExpired: () => LocalizedString
+		/**
+		 * Failed to get Jira instances.
+		 */
+		instancesError: () => LocalizedString
+		/**
+		 * Set up a Jira instance on your profile page to import stories.
+		 */
+		setupPrompt: () => LocalizedString
+		/**
+		 * Open profile page
+		 */
+		profilePage: () => LocalizedString
+		/**
+		 * Select Jira Instance to import from
+		 */
+		selectInstance: () => LocalizedString
+		/**
+		 * Search JQL
+		 */
+		searchLabel: () => LocalizedString
+		/**
+		 * Enter Search JQL...
+		 */
+		queryPlaceholder: () => LocalizedString
+		/**
+		 * Enter a JQL query, for example: order by created DESC
+		 */
+		queryRequired: () => LocalizedString
+		/**
+		 * Search
+		 */
+		search: () => LocalizedString
+		/**
+		 * Searching...
+		 */
+		searching: () => LocalizedString
+		/**
+		 * Fetching stories from Jira. Large result sets may take a while; please wait.
+		 */
+		searchingHint: () => LocalizedString
+		/**
+		 * Jira search failed. Please try again.
+		 */
+		searchError: () => LocalizedString
+		/**
+		 * Jira JQL Search Error: {error}
+		 */
+		searchErrorDetails: (arg: { error: unknown }) => LocalizedString
+		/**
+		 * No stories found for this JQL query.
+		 */
+		noStories: () => LocalizedString
+		/**
+		 * All stories have been imported!
+		 */
+		allImported: () => LocalizedString
+		/**
+		 * Search Results ({count})
+		 */
+		searchResults: (arg: { count: unknown }) => LocalizedString
+		/**
+		 * Import All
+		 */
+		importAll: () => LocalizedString
+		/**
+		 * Import
+		 */
+		importStory: () => LocalizedString
+		/**
+		 * Common JQL conditions
+		 */
+		commonConditions: () => LocalizedString
+		/**
+		 * Replace example values with your Jira values. Sprint accepts a name or ID. Combine conditions with AND and put ORDER BY last.
+		 */
+		examplesHint: () => LocalizedString
+		/**
+		 * Combined example
+		 */
+		combinedExample: () => LocalizedString
+		examples: {
+			/**
+			 * Specific sprint
+			 */
+			sprint: () => LocalizedString
+			/**
+			 * Active sprints
+			 */
+			activeSprint: () => LocalizedString
+			/**
+			 * Project key
+			 */
+			project: () => LocalizedString
+			/**
+			 * Assigned to the connected Jira account
+			 */
+			assignee: () => LocalizedString
+			/**
+			 * Status
+			 */
+			status: () => LocalizedString
+			/**
+			 * Issue type
+			 */
+			issueType: () => LocalizedString
+			/**
+			 * Updated in the last 7 days
+			 */
+			updated: () => LocalizedString
+		}
+	}
 }
 
 export type Formatters = {}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Bell } from '@lucide/svelte';
   import { appRoutes } from '../../config';
+  import LL from '../../i18n/i18n-svelte';
 
   interface Props {
     salesPitch?: string;
@@ -16,14 +17,14 @@
   <div class="flex items-center space-x-3 text-gray-700 dark:text-gray-200">
     <Bell class="w-5 h-5 text-blue-500 dark:text-blue-400 animate-pulse" />
     <p class="text-sm sm:text-base">
-      {#if isNew}<span class="font-semibold">New:</span>{/if}
+      {#if isNew}<span class="font-semibold">{$LL.importStoriesUI.newFeature()}</span>{/if}
       {salesPitch}
       <a
         class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer ms-1 underline"
         href={appRoutes.subscriptionPricing}
         target="_blank"
       >
-        Subscribe now
+        {$LL.importStoriesUI.subscribeNow()}
       </a>
     </p>
   </div>

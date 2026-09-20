@@ -36,7 +36,7 @@
 
   function getGameStories() {
     if (selectedGameIdx === '') {
-      notifications.danger('Game not selected');
+      notifications.danger($LL.importStoriesUI.gameNotSelected());
       return;
     }
     const gameId = games[selectedGameIdx].id;
@@ -61,8 +61,7 @@
 
 <div class="mb-4">
   <SelectInput id="selectedGame" bind:value={selectedGameIdx} onchange={getGameStories}>
-    >
-    <option value="" disabled>Select game to import from</option>
+    <option value="" disabled>{$LL.importStoriesUI.selectGame()}</option>
     {#each games as game, idx}
       {#if game.id !== gameId}
         <option value={idx}>{game.name}</option>
@@ -87,7 +86,7 @@
           >[{story.referenceId}] {story.name}
         </div>
         <div>
-          <SolidButton onClick={importStory(idx)}>Import</SolidButton>
+          <SolidButton onClick={importStory(idx)}>{$LL.importStoriesUI.importStory()}</SolidButton>
         </div>
       </div>
     {/each}

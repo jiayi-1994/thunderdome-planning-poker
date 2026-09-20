@@ -10,7 +10,7 @@
   import type { NotificationService } from '../../types/notifications';
   import type { ApiClient } from '../../types/apiclient';
   import type { SessionUser } from '../../types/user';
-  import { SearchIcon } from '@lucide/svelte';
+  import { LoaderCircle, SearchIcon } from '@lucide/svelte';
   import { jiraStoryIdentity, type JiraStoryReference } from './storyIdentity';
 
   const dispatch = createEventDispatcher();
@@ -63,7 +63,17 @@
   let jqlError: string = $state('');
   let importedStoryKeys = $state<string[]>([]);
   let searchCompleted: boolean = $state(false);
+  let searching = $state(false);
   let searchVersion = 0;
+  const jqlExamples = [
+    { label: 'sprint', query: 'sprint = "Sprint 42"' },
+    { label: 'activeSprint', query: 'sprint in openSprints()' },
+    { label: 'project', query: 'project = "PROJ"' },
+    { label: 'assignee', query: 'assignee = currentUser()' },
+    { label: 'status', query: 'status = "In Progress"' },
+    { label: 'issueType', query: 'issuetype = Story' },
+    { label: 'updated', query: 'updated >= -7d' },
+  ] as const;
   let existingKeys = $derived(new Set(existingStories.map(jiraStoryIdentity).filter(Boolean)));
   let availableStories = $derived.by(() => {
     const seen = new Set([...existingKeys, ...importedStoryKeys]);
@@ -97,72 +107,66 @@
                 theme: $user.theme,
                 subscribed: false,
               } as SessionUser);
-              notifications.danger('subscription(s) expired');
+              notifications.danger($LL.jiraImportUI.subscriptionExpired());
             } else {
-              notifications.danger('error getting jira instances');
+              notifications.danger($LL.jiraImportUI.instancesError());
             }
           });
         } else {
-          notifications.danger('error getting jira instances');
+          notifications.danger($LL.jiraImportUI.instancesError());
         }
       });
   }
 
-  function handleJQLSearch(event: Event) {
+  async function handleJQLSearch(event: Event) {
     event.preventDefault();
+    if (searching) return;
 
-    if (searchJQL === '') {
-      notifications.danger('Must enter a JQL search query ex: order by created DESC', 5000);
+    const query = searchJQL.trim();
+    if (!query) {
+      notifications.danger($LL.jiraImportUI.queryRequired(), 5000);
       return;
     }
+    const instance = jiraInstances[Number(selectedJiraInstance)];
+    if (selectedJiraInstance === '' || !instance) return;
 
     jiraStories = [];
+    jqlError = '';
     searchCompleted = false;
+    searching = true;
     const version = ++searchVersion;
 
-    xfetch(`/api/users/${$user.id}/jira-instances/${jiraInstances[Number(selectedJiraInstance)].id}/jql-story-search`, {
-      body: {
-        jql: searchJQL,
-        startAt: 0,
-        maxResults: 100,
-      },
-    })
-      .then(res => res.json())
-      .then(function (result) {
-        if (version !== searchVersion) return;
-        jqlError = '';
-        jiraStories = result.data.issues;
-        searchCompleted = true;
-      })
-      .catch(function (error) {
-        if (version !== searchVersion) return;
-        if (Array.isArray(error)) {
-          error[1].json().then(function (result) {
-            if (version !== searchVersion) return;
-            if (result.error === 'REQUIRES_SUBSCRIBED_USER') {
-              user.update({
-                id: $user.id,
-                name: $user.name,
-                email: $user.email,
-                rank: $user.rank,
-                avatar: $user.avatar,
-                verified: $user.verified,
-                notificationsEnabled: $user.notificationsEnabled,
-                locale: $user.locale,
-                theme: $user.theme,
-                subscribed: false,
-              } as SessionUser);
-              jqlError = 'subscription(s) expired';
-            } else {
-              jqlError = `Jira JQL Search Error: ${result.error}`;
-            }
-            searchCompleted = true;
-          });
-        } else {
-          notifications.danger('Unknown Jira JQL search error');
-          searchCompleted = true;
-        }
+    try {
+      const response = await xfetch(`/api/users/${$user.id}/jira-instances/${instance.id}/jql-story-search`, {
+        body: { jql: query, startAt: 0, maxResults: 100 },
       });
+      const result = await response.json();
+      if (version !== searchVersion) return;
+      jiraStories = result.data.issues;
+    } catch (error) {
+      if (version !== searchVersion) return;
+      let message = $LL.jiraImportUI.searchError();
+      if (Array.isArray(error) && error[1] instanceof Response) {
+        try {
+          const result = await error[1].json();
+          if (version !== searchVersion) return;
+          if (result.error === 'REQUIRES_SUBSCRIBED_USER') {
+            user.update({ ...$user, subscribed: false } as SessionUser);
+            message = $LL.jiraImportUI.subscriptionExpired();
+          } else if (typeof result.error === 'string' && result.error) {
+            message = $LL.jiraImportUI.searchErrorDetails({ error: result.error });
+          }
+        } catch {
+          // A proxy may return HTML instead of a JSON error response.
+        }
+      }
+      if (version === searchVersion) jqlError = message;
+    } finally {
+      if (version === searchVersion) {
+        searching = false;
+        searchCompleted = true;
+      }
+    }
   }
 
   function findPlanType(type: string) {
@@ -209,27 +213,29 @@
 </script>
 
 {#if AppConfig.SubscriptionsEnabled && !$user.subscribed}
-  <FeatureSubscribeBanner salesPitch="Import your stories for Poker Planning from Jira Cloud." />
+  <FeatureSubscribeBanner salesPitch={$LL.jiraImportUI.subscriptionPitch()} />
 {:else if !AppConfig.SubscriptionsEnabled || (AppConfig.SubscriptionsEnabled && $user.subscribed)}
   {#if jiraInstances.length === 0}
     <p class="info-banner">
-      Visit your <a href={appRoutes.profile} class="info-banner-link" target="_blank">profile page</a> to setup instances
-      of Jira Cloud.
+      {$LL.jiraImportUI.setupPrompt()}
+      <a href={appRoutes.profile} class="info-banner-link" target="_blank">{$LL.jiraImportUI.profilePage()}</a>
     </p>
   {:else}
     <div class="select-wrapper">
       <SelectInput
         id="jirainstance"
+        aria-label={$LL.jiraImportUI.selectInstance()}
         bind:value={selectedJiraInstance}
         onchange={() => {
           searchVersion++;
           jiraStories = [];
           jqlError = '';
           searchCompleted = false;
+          searching = false;
           dispatch('instance_selected');
         }}
       >
-        <option value="" disabled>Select Jira Instance to import from</option>
+        <option value="" disabled>{$LL.jiraImportUI.selectInstance()}</option>
         {#each jiraInstances as ji, idx}
           <option value={idx}>{ji.host}</option>
         {/each}
@@ -238,41 +244,67 @@
 
     {#if selectedJiraInstance !== ''}
       <form onsubmit={handleJQLSearch} class="search-form">
-        <label for="jql-search" class="search-label">Search</label>
+        <label for="jql-search" class="search-label">{$LL.jiraImportUI.searchLabel()}</label>
         <div class="search-container">
-          <div class="search-icon-wrapper">
-            <SearchIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <div class="relative flex-1 min-w-0">
+            <div class="search-icon-wrapper">
+              <SearchIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            </div>
+            <input
+              type="search"
+              id="jql-search"
+              class="search-input"
+              placeholder={$LL.jiraImportUI.queryPlaceholder()}
+              bind:value={searchJQL}
+              disabled={searching}
+              required
+            />
           </div>
-          <input
-            type="search"
-            id="jql-search"
-            class="search-input"
-            placeholder="Enter Search JQL..."
-            bind:value={searchJQL}
-            required
-          />
-          <button type="submit" class="search-button"> Search </button>
+          <button type="submit" class="search-button" disabled={searching} aria-busy={searching}>
+            {#if searching}<LoaderCircle class="w-4 h-4 motion-safe:animate-spin" aria-hidden="true" />{/if}
+            {searching ? $LL.jiraImportUI.searching() : $LL.jiraImportUI.search()}
+          </button>
         </div>
       </form>
 
-      <div class="stories-wrapper">
+      <details open class="mb-4 text-sm text-gray-700 dark:text-gray-300">
+        <summary class="cursor-pointer font-medium rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">
+          {$LL.jiraImportUI.commonConditions()}
+        </summary>
+        <p class="mt-2 mb-3">{$LL.jiraImportUI.examplesHint()}</p>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+          {#each jqlExamples as example}
+            <div class="min-w-0">
+              <dt class="mb-1">{$LL.jiraImportUI.examples[example.label]()}</dt>
+              <dd><code class="select-all break-words">{example.query}</code></dd>
+            </div>
+          {/each}
+        </dl>
+        <p class="mt-3 font-medium">{$LL.jiraImportUI.combinedExample()}</p>
+        <code class="block mt-1 select-all break-words">project = "PROJ" AND sprint in openSprints() ORDER BY updated DESC</code>
+      </details>
+
+      <p role="status" class="text-sm text-gray-600 dark:text-gray-400" class:mb-3={searching}>
+        {searching ? $LL.jiraImportUI.searchingHint() : ''}
+      </p>
+      <div class="stories-wrapper" aria-busy={searching}>
         {#if jqlError !== ''}
-          <div class="error-message">
+          <div class="error-message" role="alert">
             {jqlError}
           </div>
         {/if}
         {#if searchCompleted && jiraStories.length === 0 && jqlError === ''}
-          <p class="no-stories-message">No stories found for this JQL query.</p>
+          <p class="no-stories-message">{$LL.jiraImportUI.noStories()}</p>
         {/if}
         {#if jiraStories.length > 0 && availableStories.length === 0}
-          <p class="all-imported-message">All stories have been imported!</p>
+          <p class="all-imported-message">{$LL.jiraImportUI.allImported()}</p>
         {/if}
         {#if availableStories.length > 0}
           <div class="search-result-header">
             <span class="text-lg font-semibold">
-              Search Results ({availableStories.length})
+              {$LL.jiraImportUI.searchResults({ count: availableStories.length })}
             </span>
-            <SolidButton onClick={importAllStories}>Import All</SolidButton>
+            <SolidButton onClick={importAllStories}>{$LL.jiraImportUI.importAll()}</SolidButton>
           </div>
         {/if}
         {#each availableStories as story}
@@ -281,7 +313,7 @@
               [{story.key}] {story.fields.summary}
             </div>
             <div>
-              <SolidButton onClick={() => importStory(story)}>Import</SolidButton>
+              <SolidButton onClick={() => importStory(story)}>{$LL.jiraImportUI.importStory()}</SolidButton>
             </div>
           </div>
         {/each}
@@ -320,7 +352,7 @@
   }
 
   .search-container {
-    @apply relative;
+    @apply flex flex-col sm:flex-row gap-2;
   }
 
   .search-icon-wrapper {
@@ -348,7 +380,11 @@
   }
 
   .search-button {
-    @apply text-white absolute end-2.5 bottom-2.5 bg-blue-700 font-medium rounded-lg text-sm px-4 py-2;
+    @apply text-white bg-blue-700 font-medium rounded-lg text-sm px-4 py-2 inline-flex items-center justify-center gap-2 shrink-0;
+  }
+
+  .search-button:disabled {
+    @apply opacity-60 cursor-wait;
   }
 
   :root.dark .search-button {
