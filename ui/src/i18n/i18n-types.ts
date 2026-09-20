@@ -21,6 +21,52 @@ export type Translation = RootTranslation
 export type Translations = RootTranslation
 
 type RootTranslation = {
+	voteReminderUI: {
+		/**
+		 * L​e​s​s​ ​t​h​a​n​ ​3​0​ ​s​e​c​o​n​d​s​ ​l​e​f​t​.​ ​P​l​e​a​s​e​ ​s​u​b​m​i​t​ ​y​o​u​r​ ​e​s​t​i​m​a​t​e​.
+		 */
+		warning: string
+		/**
+		 * P​l​e​a​s​e​ ​s​u​b​m​i​t​ ​y​o​u​r​ ​e​s​t​i​m​a​t​e
+		 */
+		title: string
+		/**
+		 * Y​o​u​r​ ​e​s​t​i​m​a​t​e​ ​i​s​ ​s​t​i​l​l​ ​n​e​e​d​e​d
+		 */
+		notificationTitle: string
+		/**
+		 * L​e​s​s​ ​t​h​a​n​ ​3​0​ ​s​e​c​o​n​d​s​ ​r​e​m​a​i​n​.​ ​R​e​t​u​r​n​ ​t​o​ ​t​h​e​ ​m​e​e​t​i​n​g​ ​t​o​ ​s​u​b​m​i​t​ ​y​o​u​r​ ​e​s​t​i​m​a​t​e​.
+		 */
+		notificationBody: string
+		/**
+		 * E​n​a​b​l​e​ ​d​e​s​k​t​o​p​ ​n​o​t​i​f​i​c​a​t​i​o​n​s
+		 */
+		enableDesktop: string
+		/**
+		 * D​e​s​k​t​o​p​ ​n​o​t​i​f​i​c​a​t​i​o​n​s​ ​e​n​a​b​l​e​d
+		 */
+		desktopEnabled: string
+		/**
+		 * D​e​s​k​t​o​p​ ​n​o​t​i​f​i​c​a​t​i​o​n​s​ ​a​r​e​ ​b​l​o​c​k​e​d​.​ ​A​l​l​o​w​ ​n​o​t​i​f​i​c​a​t​i​o​n​s​ ​i​n​ ​y​o​u​r​ ​b​r​o​w​s​e​r​ ​s​i​t​e​ ​s​e​t​t​i​n​g​s​.
+		 */
+		permissionDenied: string
+		/**
+		 * T​a​b​ ​r​e​m​i​n​d​e​r​s​ ​a​r​e​ ​a​v​a​i​l​a​b​l​e​ ​h​e​r​e​.​ ​D​e​s​k​t​o​p​ ​n​o​t​i​f​i​c​a​t​i​o​n​s​ ​r​e​q​u​i​r​e​ ​H​T​T​P​S​.
+		 */
+		httpsRequired: string
+		/**
+		 * T​h​i​s​ ​b​r​o​w​s​e​r​ ​s​u​p​p​o​r​t​s​ ​t​a​b​ ​r​e​m​i​n​d​e​r​s​ ​o​n​l​y​.
+		 */
+		unsupported: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​e​n​a​b​l​e​ ​d​e​s​k​t​o​p​ ​n​o​t​i​f​i​c​a​t​i​o​n​s​.​ ​T​a​b​ ​r​e​m​i​n​d​e​r​s​ ​a​r​e​ ​s​t​i​l​l​ ​a​v​a​i​l​a​b​l​e​.
+		 */
+		permissionFailed: string
+		/**
+		 * R​e​q​u​e​s​t​i​n​g​ ​p​e​r​m​i​s​s​i​o​n​.​.​.
+		 */
+		requestingPermission: string
+	}
 	/**
 	 * U​s​e​r​ ​G​u​i​d​e
 	 */
@@ -3601,6 +3647,52 @@ type RootTranslation = {
 }
 
 export type TranslationFunctions = {
+	voteReminderUI: {
+		/**
+		 * Less than 30 seconds left. Please submit your estimate.
+		 */
+		warning: () => LocalizedString
+		/**
+		 * Please submit your estimate
+		 */
+		title: () => LocalizedString
+		/**
+		 * Your estimate is still needed
+		 */
+		notificationTitle: () => LocalizedString
+		/**
+		 * Less than 30 seconds remain. Return to the meeting to submit your estimate.
+		 */
+		notificationBody: () => LocalizedString
+		/**
+		 * Enable desktop notifications
+		 */
+		enableDesktop: () => LocalizedString
+		/**
+		 * Desktop notifications enabled
+		 */
+		desktopEnabled: () => LocalizedString
+		/**
+		 * Desktop notifications are blocked. Allow notifications in your browser site settings.
+		 */
+		permissionDenied: () => LocalizedString
+		/**
+		 * Tab reminders are available here. Desktop notifications require HTTPS.
+		 */
+		httpsRequired: () => LocalizedString
+		/**
+		 * This browser supports tab reminders only.
+		 */
+		unsupported: () => LocalizedString
+		/**
+		 * Could not enable desktop notifications. Tab reminders are still available.
+		 */
+		permissionFailed: () => LocalizedString
+		/**
+		 * Requesting permission...
+		 */
+		requestingPermission: () => LocalizedString
+	}
 	/**
 	 * User Guide
 	 */

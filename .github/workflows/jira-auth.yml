@@ -25,6 +25,9 @@ on:
       - 'ui/src/components/poker/PokerSettings.test.ts'
       - 'ui/src/components/poker/*PokerGame.svelte'
       - 'ui/src/components/poker/VoteTimer*'
+      - 'ui/src/components/poker/VoteReminder*'
+      - 'ui/src/components/poker/voteReminderBrowser.ts'
+      - 'ui/public/img/vote-reminder.svg'
       - 'ui/src/components/poker/VotingControls.svelte'
       - 'ui/src/components/poker/CategoryVoting*'
       - 'ui/src/components/poker/categoryEstimation.ts'
@@ -33,6 +36,7 @@ on:
       - 'ui/src/components/poker/PokerStories.svelte'
       - 'ui/src/components/poker/pointValues.ts'
       - 'ui/src/pages/poker/PokerGame.svelte'
+      - 'ui/src/pages/poker/PokerGame.reminder.test.ts'
       - 'ui/src/i18n/**'
       - 'ui/src/config.ts'
       - 'ui/src/App.svelte'
@@ -87,5 +91,5 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          npx vitest run src/i18n/ src/components/jira/ src/components/poker/JiraWriteback.test.ts src/components/poker/PokerSettings.test.ts src/components/poker/VoteTimer.test.ts src/components/poker/CategoryVoting.test.ts
+          npx vitest run src/i18n/ src/components/jira/ src/components/poker/JiraWriteback.test.ts src/components/poker/PokerSettings.test.ts src/components/poker/VoteTimer.test.ts src/components/poker/VoteReminder.test.ts src/components/poker/CategoryVoting.test.ts src/pages/poker/PokerGame.reminder.test.ts
           npm run build

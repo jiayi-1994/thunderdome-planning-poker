@@ -75,6 +75,7 @@
   let JoinPassRequired: boolean = $state(false);
   let socketError: boolean = $state(false);
   let socketReconnecting: boolean = $state(false);
+  let reminderStateReady = $state(false);
   let points: Array<string> = $state([...pokerPointValues]);
   let categoryVotes = $state(emptyCategoryVotes());
   let selectedCategory: PokerVoteCategory | null = $state(null);
@@ -119,6 +120,7 @@
         break;
       case 'init': {
         JoinPassRequired = false;
+        reminderStateReady = true;
         pokerGame = JSON.parse(parsedEvent.value);
         points = availablePokerPoints(pokerGame.pointValuesAllowed);
         const { spectator = false } = pokerGame.users.find((w) => w.id === $user.id) || {};
@@ -350,8 +352,10 @@
       onmessage: onSocketMessage,
       onerror: (err) => {
         socketError = true;
+        reminderStateReady = false;
       },
       onclose: (e) => {
+        reminderStateReady = false;
         if (e.code === 4004) {
           router.route(appRoutes.games);
         } else if (e.code === 4001) {
@@ -367,6 +371,7 @@
         }
       },
       onopen: () => {
+        reminderStateReady = false;
         socketError = false;
         socketReconnecting = false;
         isLoading = false;
@@ -615,6 +620,9 @@
         votingLocked={pokerGame.votingLocked || gameOver}
         {voteStartTime}
         voteDeadline={currentStory.voteDeadline}
+        reminderScope={$user.id && !isSpectator ? `${battleId}:${$user.id}` : ''}
+        remindersEnabled={$user.notificationsEnabled}
+        needsVote={reminderStateReady && !isLoading && !JoinPassRequired && !votingDisabled && !roleLocked}
         onExpire={() => {
           voteDeadlineReached = true;
         }}

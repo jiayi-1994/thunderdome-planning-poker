@@ -1,6 +1,19 @@
 import type { BaseTranslation } from '../i18n-types';
 
 const en = {
+  voteReminderUI: {
+    warning: 'Less than 30 seconds left. Please submit your estimate.',
+    title: 'Please submit your estimate',
+    notificationTitle: 'Your estimate is still needed',
+    notificationBody: 'Less than 30 seconds remain. Return to the meeting to submit your estimate.',
+    enableDesktop: 'Enable desktop notifications',
+    desktopEnabled: 'Desktop notifications enabled',
+    permissionDenied: 'Desktop notifications are blocked. Allow notifications in your browser site settings.',
+    httpsRequired: 'Tab reminders are available here. Desktop notifications require HTTPS.',
+    unsupported: 'This browser supports tab reminders only.',
+    permissionFailed: 'Could not enable desktop notifications. Tab reminders are still available.',
+    requestingPermission: 'Requesting permission...',
+  },
   userGuide: 'User Guide',
   privacyPolicy: 'Privacy Policy',
   termsConditions: 'Terms & Conditions',

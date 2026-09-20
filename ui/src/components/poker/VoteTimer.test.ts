@@ -37,6 +37,42 @@ describe('configurable voting countdown', () => {
     await expect.element(page.getByRole('timer')).toHaveTextContent('00:45');
   });
 
+  it('starts the personal reminder at 30 seconds and clears it at the deadline', async () => {
+    render(VoteTimer, {
+      currentStoryId: 'story',
+      voteStartTime: startTime,
+      voteDeadline: new Date(startTime.getTime() + 31000),
+      votingLocked: false,
+      reminderScope: 'game:user',
+      needsVote: true,
+    });
+    await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
+    await vi.advanceTimersByTimeAsync(1000);
+    await expect.element(page.getByRole('timer')).toHaveTextContent('00:30');
+    await expect.element(page.getByRole('alert')).toHaveTextContent('Please submit your estimate.');
+    await vi.advanceTimersByTimeAsync(30000);
+    await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('resynchronizes reminders on resume even if background timer callbacks were suspended', async () => {
+    render(VoteTimer, {
+      currentStoryId: 'story',
+      voteStartTime: startTime,
+      votingLocked: false,
+      reminderScope: 'game:user',
+      needsVote: true,
+    });
+    await expect.element(page.getByRole('timer')).toHaveTextContent('02:00');
+    vi.setSystemTime(new Date(startTime.getTime() + 95000));
+    document.dispatchEvent(new Event('visibilitychange'));
+    await expect.element(page.getByRole('timer')).toHaveTextContent('00:25');
+    await expect.element(page.getByRole('alert')).toBeInTheDocument();
+    vi.setSystemTime(new Date(startTime.getTime() + 125000));
+    window.dispatchEvent(new Event('focus'));
+    await expect.element(page.getByRole('timer')).toHaveTextContent('00:00');
+    await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('uses the server deadline and restarts only for a new round', async () => {
     const { rerender } = render(VoteTimer, {
       currentStoryId: 'story',

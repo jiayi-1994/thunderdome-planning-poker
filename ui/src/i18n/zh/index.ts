@@ -1,6 +1,19 @@
 import type { Translation } from '../i18n-types';
 
 const zh: Translation = {
+  voteReminderUI: {
+    warning: '剩余不足 30 秒，请完成本轮评点。',
+    title: '请完成评点',
+    notificationTitle: '你还未完成本轮评点',
+    notificationBody: '本轮评点剩余不足 30 秒，请返回会议完成评点。',
+    enableDesktop: '启用桌面通知',
+    desktopEnabled: '桌面通知已启用',
+    permissionDenied: '桌面通知已被阻止，请在浏览器的站点设置中允许通知。',
+    httpsRequired: '当前使用标签页红点提醒；桌面通知需要 HTTPS。',
+    unsupported: '当前浏览器仅支持标签页提醒。',
+    permissionFailed: '无法启用桌面通知，标签页提醒仍然可用。',
+    requestingPermission: '正在请求权限…',
+  },
   jiraImportUI: {
     subscriptionPitch: '从 Jira 导入 Story 到评点会议。',
     subscriptionExpired: '你的订阅已过期。',
