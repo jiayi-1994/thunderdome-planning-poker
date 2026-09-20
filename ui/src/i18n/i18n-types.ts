@@ -3402,6 +3402,106 @@ type RootTranslation = {
 		 */
 		selectInstance: string
 		/**
+		 * S​e​a​r​c​h​ ​m​o​d​e
+		 */
+		searchMode: string
+		/**
+		 * B​a​s​i​c​ ​f​i​l​t​e​r​s
+		 */
+		basicFilters: string
+		/**
+		 * A​d​v​a​n​c​e​d​ ​J​Q​L
+		 */
+		advancedJQL: string
+		/**
+		 * W​r​i​t​e​ ​a​ ​J​Q​L​ ​q​u​e​r​y​ ​h​e​r​e​.​ ​B​a​s​i​c​ ​f​i​l​t​e​r​s​ ​a​r​e​ ​k​e​p​t​ ​s​e​p​a​r​a​t​e​l​y​;​ ​s​w​i​t​c​h​i​n​g​ ​b​a​c​k​ ​r​e​s​t​o​r​e​s​ ​y​o​u​r​ ​f​i​l​t​e​r​ ​s​e​l​e​c​t​i​o​n​s​.
+		 */
+		advancedHint: string
+		/**
+		 * Q​u​e​r​y​ ​p​r​e​v​i​e​w
+		 */
+		queryPreview: string
+		/**
+		 * I​s​s​u​e​ ​t​y​p​e
+		 */
+		issueType: string
+		/**
+		 * A​l​l​ ​i​s​s​u​e​ ​t​y​p​e​s
+		 */
+		allIssueTypes: string
+		/**
+		 * L​o​a​d​i​n​g​ ​i​s​s​u​e​ ​t​y​p​e​s​.​.​.
+		 */
+		loadingIssueTypes: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​l​o​a​d​ ​i​s​s​u​e​ ​t​y​p​e​s​.​ ​R​e​t​r​y​ ​o​r​ ​u​s​e​ ​A​d​v​a​n​c​e​d​ ​J​Q​L​.
+		 */
+		issueTypesError: string
+		/**
+		 * R​e​t​r​y​ ​i​s​s​u​e​ ​t​y​p​e​s
+		 */
+		retryIssueTypes: string
+		/**
+		 * N​o​ ​i​s​s​u​e​ ​t​y​p​e​s​ ​a​r​e​ ​a​v​a​i​l​a​b​l​e​.​ ​Y​o​u​ ​c​a​n​ ​s​e​a​r​c​h​ ​w​i​t​h​ ​A​d​v​a​n​c​e​d​ ​J​Q​L​.
+		 */
+		noIssueTypes: string
+		/**
+		 * F​i​n​d​ ​a​ ​s​p​r​i​n​t​ ​b​y​ ​n​a​m​e
+		 */
+		sprintSearchLabel: string
+		/**
+		 * E​n​t​e​r​ ​a​ ​s​p​r​i​n​t​ ​n​a​m​e​,​ ​e​.​g​.​ ​S​p​r​i​n​t​4​1
+		 */
+		sprintQueryPlaceholder: string
+		/**
+		 * S​p​r​i​n​t
+		 */
+		sprint: string
+		/**
+		 * A​l​l​ ​s​p​r​i​n​t​s
+		 */
+		allSprints: string
+		/**
+		 * F​i​n​d​ ​s​p​r​i​n​t​s
+		 */
+		findSprints: string
+		/**
+		 * L​o​a​d​i​n​g​ ​s​p​r​i​n​t​s​.​.​.
+		 */
+		loadingSprints: string
+		/**
+		 * C​o​u​l​d​ ​n​o​t​ ​l​o​a​d​ ​s​p​r​i​n​t​s​.​ ​R​e​t​r​y​ ​o​r​ ​u​s​e​ ​A​d​v​a​n​c​e​d​ ​J​Q​L​.
+		 */
+		sprintsError: string
+		/**
+		 * R​e​t​r​y​ ​s​p​r​i​n​t​s
+		 */
+		retrySprints: string
+		/**
+		 * N​o​ ​m​a​t​c​h​i​n​g​ ​s​p​r​i​n​t​s​.​ ​T​r​y​ ​a​n​o​t​h​e​r​ ​n​a​m​e​ ​o​r​ ​u​s​e​ ​A​d​v​a​n​c​e​d​ ​J​Q​L​.
+		 */
+		noSprints: string
+		/**
+		 * I​n​c​l​u​d​e​s​ ​a​c​t​i​v​e​,​ ​u​p​c​o​m​i​n​g​ ​a​n​d​ ​c​o​m​p​l​e​t​e​d​ ​s​p​r​i​n​t​s​.​ ​S​e​a​r​c​h​ ​b​y​ ​n​a​m​e​ ​t​o​ ​f​i​n​d​ ​m​o​r​e​.
+		 */
+		sprintsHint: string
+		/**
+		 * A​c​t​i​v​e
+		 */
+		sprintActive: string
+		/**
+		 * U​p​c​o​m​i​n​g
+		 */
+		sprintFuture: string
+		/**
+		 * C​o​m​p​l​e​t​e​d
+		 */
+		sprintClosed: string
+		/**
+		 * U​n​k​n​o​w​n​ ​s​t​a​t​u​s
+		 */
+		sprintUnknown: string
+		/**
 		 * S​e​a​r​c​h​ ​J​Q​L
 		 */
 		searchLabel: string
@@ -6834,6 +6934,106 @@ export type TranslationFunctions = {
 		 * Select Jira Instance to import from
 		 */
 		selectInstance: () => LocalizedString
+		/**
+		 * Search mode
+		 */
+		searchMode: () => LocalizedString
+		/**
+		 * Basic filters
+		 */
+		basicFilters: () => LocalizedString
+		/**
+		 * Advanced JQL
+		 */
+		advancedJQL: () => LocalizedString
+		/**
+		 * Write a JQL query here. Basic filters are kept separately; switching back restores your filter selections.
+		 */
+		advancedHint: () => LocalizedString
+		/**
+		 * Query preview
+		 */
+		queryPreview: () => LocalizedString
+		/**
+		 * Issue type
+		 */
+		issueType: () => LocalizedString
+		/**
+		 * All issue types
+		 */
+		allIssueTypes: () => LocalizedString
+		/**
+		 * Loading issue types...
+		 */
+		loadingIssueTypes: () => LocalizedString
+		/**
+		 * Could not load issue types. Retry or use Advanced JQL.
+		 */
+		issueTypesError: () => LocalizedString
+		/**
+		 * Retry issue types
+		 */
+		retryIssueTypes: () => LocalizedString
+		/**
+		 * No issue types are available. You can search with Advanced JQL.
+		 */
+		noIssueTypes: () => LocalizedString
+		/**
+		 * Find a sprint by name
+		 */
+		sprintSearchLabel: () => LocalizedString
+		/**
+		 * Enter a sprint name, e.g. Sprint41
+		 */
+		sprintQueryPlaceholder: () => LocalizedString
+		/**
+		 * Sprint
+		 */
+		sprint: () => LocalizedString
+		/**
+		 * All sprints
+		 */
+		allSprints: () => LocalizedString
+		/**
+		 * Find sprints
+		 */
+		findSprints: () => LocalizedString
+		/**
+		 * Loading sprints...
+		 */
+		loadingSprints: () => LocalizedString
+		/**
+		 * Could not load sprints. Retry or use Advanced JQL.
+		 */
+		sprintsError: () => LocalizedString
+		/**
+		 * Retry sprints
+		 */
+		retrySprints: () => LocalizedString
+		/**
+		 * No matching sprints. Try another name or use Advanced JQL.
+		 */
+		noSprints: () => LocalizedString
+		/**
+		 * Includes active, upcoming and completed sprints. Search by name to find more.
+		 */
+		sprintsHint: () => LocalizedString
+		/**
+		 * Active
+		 */
+		sprintActive: () => LocalizedString
+		/**
+		 * Upcoming
+		 */
+		sprintFuture: () => LocalizedString
+		/**
+		 * Completed
+		 */
+		sprintClosed: () => LocalizedString
+		/**
+		 * Unknown status
+		 */
+		sprintUnknown: () => LocalizedString
 		/**
 		 * Search JQL
 		 */

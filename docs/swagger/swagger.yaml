@@ -1288,11 +1288,31 @@ definitions:
       user_id:
         type: string
     type: object
+  thunderdome.JiraIssueTypeOption:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      subtask:
+        type: boolean
+    type: object
   thunderdome.JiraNumericField:
     properties:
       id:
         type: string
       name:
+        type: string
+    type: object
+  thunderdome.JiraSprintOption:
+    properties:
+      boardName:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      state:
         type: string
     type: object
   thunderdome.Organization:
@@ -11694,6 +11714,42 @@ paths:
       summary: Update Jira Instance
       tags:
       - jira
+  /users/{userId}/jira-instances/{instanceId}/issue-types:
+    get:
+      parameters:
+      - description: the user ID owning the Jira instance
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: the Jira instance ID
+        in: path
+        name: instanceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.standardJsonResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/thunderdome.JiraIssueTypeOption'
+                  type: array
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Jira issue types
+      tags:
+      - jira
   /users/{userId}/jira-instances/{instanceId}/jql-story-search:
     post:
       description: Queries Jira Instance API for Stories by JQL
@@ -11728,6 +11784,46 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Query Jira for Stories by JQL
+      tags:
+      - jira
+  /users/{userId}/jira-instances/{instanceId}/sprints:
+    get:
+      parameters:
+      - description: the user ID owning the Jira instance
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: the Jira instance ID
+        in: path
+        name: instanceId
+        required: true
+        type: string
+      - description: Sprint name, up to 200 characters
+        in: query
+        name: query
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http.standardJsonResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/thunderdome.JiraSprintOption'
+                  type: array
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/http.standardJsonResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Jira sprint suggestions
       tags:
       - jira
   /users/{userId}/jira-instances/{instanceId}/test:

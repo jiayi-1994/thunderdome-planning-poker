@@ -31,6 +31,12 @@ const instances = [
   { id: 'two', host: 'https://other.example.com' },
 ];
 
+function metadataResponse(url: string) {
+  if (url.endsWith('/issue-types')) return response([{ id: 'story', name: 'Story', subtask: false }]);
+  if (url.includes('/sprints?')) return response([]);
+  return undefined;
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason: unknown) => void;
@@ -43,12 +49,15 @@ function deferred<T>() {
 
 function setup(issues = [issue('TEST-1')], existingStories: Array<{ referenceId: string; link: string }> = []) {
   const handleImport = vi.fn();
-  const xfetch = vi.fn(async (url: string) => response(url.endsWith('jira-instances') ? instances : { issues }));
+  const xfetch = vi.fn(
+    async (url: string) => metadataResponse(url) ?? response(url.endsWith('jira-instances') ? instances : { issues }),
+  );
   const view = render(JQLImport, { notifications, xfetch, handleImport, existingStories });
   return { handleImport, xfetch, view };
 }
 
 async function search() {
+  await page.getByRole('button', { name: 'Advanced JQL', exact: true }).click();
   await page.getByRole('searchbox').fill('order by created DESC');
   await page.getByRole('button', { name: 'Search', exact: true }).click();
 }
@@ -56,11 +65,12 @@ async function search() {
 describe('Jira search feedback', () => {
   it('shows a busy button and prevents duplicate submissions until the results arrive', async () => {
     const pending = deferred<Response>();
-    const xfetch = vi.fn(async (url: string) =>
-      url.endsWith('jira-instances') ? response(instances) : pending.promise,
+    const xfetch = vi.fn(
+      async (url: string) =>
+        metadataResponse(url) ?? (url.endsWith('jira-instances') ? response(instances) : pending.promise),
     );
     render(JQLImport, { notifications, xfetch });
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     const busy = page.getByRole('button', { name: 'Searching...', exact: true });
     await expect.element(busy).toBeDisabled();
@@ -83,11 +93,12 @@ describe('Jira search feedback', () => {
   ])('restores the search button after a $kind and allows a retry', async ({ error }) => {
     const pending = deferred<Response>();
     const xfetch = vi.fn(async (url: string) => {
+      if (metadataResponse(url)) return metadataResponse(url)!;
       if (url.endsWith('jira-instances')) return response(instances);
       return pending.promise;
     });
     render(JQLImport, { notifications, xfetch });
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await expect.element(page.getByRole('button', { name: 'Searching...', exact: true })).toBeDisabled();
     pending.reject(error());
@@ -101,13 +112,14 @@ describe('Jira search feedback', () => {
 
   it('clears the previous query error as soon as a retry starts', async () => {
     const retry = deferred<Response>();
-    const xfetch = vi
+    const searchRequest = vi
       .fn()
-      .mockResolvedValueOnce(response(instances))
       .mockRejectedValueOnce([400, new Response(JSON.stringify({ error: 'Invalid JQL' }))])
       .mockReturnValueOnce(retry.promise);
+    const xfetch = async (url: string) =>
+      metadataResponse(url) ?? (url.endsWith('jira-instances') ? response(instances) : searchRequest());
     render(JQLImport, { notifications, xfetch });
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await expect.element(page.getByText('Jira JQL Search Error: Invalid JQL')).toBeVisible();
     await search();
@@ -125,13 +137,14 @@ describe('Jira search feedback', () => {
     render(JQLImport, {
       notifications,
       xfetch: async (url: string) => {
+        if (metadataResponse(url)) return metadataResponse(url)!;
         if (url.endsWith('jira-instances')) return response(instances);
         return url.includes('/one/') ? oldSearch.promise : newSearch.promise;
       },
     });
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
-    await page.getByRole('combobox').selectOptions('1');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('1');
     await expect.element(page.getByRole('button', { name: 'Search', exact: true })).toBeEnabled();
     await search();
     oldSearch.resolve(oldResponse);
@@ -154,15 +167,16 @@ describe('Jira search feedback', () => {
     render(JQLImport, {
       notifications,
       xfetch: async (url: string) => {
+        if (metadataResponse(url)) return metadataResponse(url)!;
         if (url.endsWith('jira-instances')) return response(instances);
         return url.includes('/one/') ? oldSearch.promise : newSearch.promise;
       },
     });
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     oldSearch.reject([400, oldErrorResponse]);
     await expect.poll(() => readOldError.mock.calls.length).toBe(1);
-    await page.getByRole('combobox').selectOptions('1');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('1');
     await search();
     oldErrorBody.resolve({ error: 'Previous instance failed' });
     await oldErrorBody.promise;
@@ -182,10 +196,13 @@ describe('Jira search feedback', () => {
     try {
       render(JQLImport, {
         notifications,
-        xfetch: async (url: string) => (url.endsWith('jira-instances') ? response(instances) : pending.promise),
+        xfetch: async (url: string) =>
+          metadataResponse(url) ?? (url.endsWith('jira-instances') ? response(instances) : pending.promise),
       });
-      await page.getByRole('combobox').selectOptions('0');
+      await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
+      await page.getByText('常用 JQL 条件', { exact: true }).click();
       await expect.element(page.getByText('sprint = "Sprint 42"', { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: '高级 JQL', exact: true }).click();
       await page.getByRole('searchbox').fill('sprint in openSprints()');
       await page.getByRole('button', { name: '搜索', exact: true }).click();
       await expect.element(page.getByRole('button', { name: '搜索中…', exact: true })).toBeDisabled();
@@ -208,11 +225,12 @@ describe('Jira import deduplication', () => {
     render(JQLImport, {
       notifications,
       handleImport,
-      xfetch: async (url: string) => (url.endsWith('jira-instances') ? response(instances) : pending),
+      xfetch: async (url: string) =>
+        metadataResponse(url) ?? (url.endsWith('jira-instances') ? response(instances) : pending),
     });
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
-    await page.getByRole('combobox').selectOptions('1');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('1');
     finish(response({ issues: [issue('OLD-1')] }));
     await expect.element(page.getByRole('button', { name: 'Import', exact: true })).not.toBeInTheDocument();
     expect(handleImport).not.toHaveBeenCalled();
@@ -220,7 +238,7 @@ describe('Jira import deduplication', () => {
 
   it('updates filtering when another participant imports a story', async () => {
     const { view, handleImport } = setup();
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await expect.element(page.getByRole('button', { name: 'Import', exact: true })).toBeVisible();
     await view.rerender({
@@ -232,6 +250,7 @@ describe('Jira import deduplication', () => {
 
   it('keeps creation draft stories excluded after closing and reopening import', async () => {
     const xfetch = vi.fn(async (url: string) => {
+      if (metadataResponse(url)) return metadataResponse(url)!;
       if (url.endsWith('jira-instances')) return response(instances);
       if (url.endsWith('jql-story-search')) return response({ issues: [issue('TEST-1')] });
       if (url.endsWith('/estimation-scales/public'))
@@ -240,13 +259,13 @@ describe('Jira import deduplication', () => {
     });
     render(CreatePokerGame, { notifications, router: { route: vi.fn() }, xfetch });
     await page.getByRole('button', { name: 'Import Stories', exact: true }).click();
-    await page.getByRole('dialog').getByRole('combobox').selectOptions('0');
+    await page.getByRole('dialog').getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await page.getByRole('button', { name: 'Import', exact: true }).click();
     await page.getByRole('button', { name: 'Close modal' }).click();
     await expect.element(page.getByPlaceholder('Enter a story name')).toHaveValue('Story TEST-1');
     await page.getByRole('button', { name: 'Import Stories', exact: true }).click();
-    await page.getByRole('dialog').getByRole('combobox').selectOptions('0');
+    await page.getByRole('dialog').getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await expect.element(page.getByText('All stories have been imported!')).toBeVisible();
   });
@@ -272,10 +291,10 @@ describe('Jira import deduplication', () => {
         },
       ],
       xfetch: async (url: string) =>
-        response(url.endsWith('jira-instances') ? instances : { issues: [issue('TEST-1')] }),
+        metadataResponse(url) ?? response(url.endsWith('jira-instances') ? instances : { issues: [issue('TEST-1')] }),
     });
     await page.getByRole('button', { name: 'Import Stories', exact: true }).click();
-    await page.getByRole('dialog').getByRole('combobox').selectOptions('0');
+    await page.getByRole('dialog').getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await expect.element(page.getByText('All stories have been imported!')).toBeVisible();
     expect(sendSocketEvent).not.toHaveBeenCalled();
@@ -286,7 +305,7 @@ describe('Jira import deduplication', () => {
       [issue('TEST-1'), issue('TEST-2')],
       [{ referenceId: ' test-1 ', link: 'https://JIRA.example.com/jira/browse/TEST-1/?source=board#details' }],
     );
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await expect.element(page.getByText('[TEST-2] Story TEST-2')).toBeVisible();
     await page.getByRole('button', { name: 'Import All', exact: true }).click();
@@ -295,7 +314,7 @@ describe('Jira import deduplication', () => {
 
   it('does not reimport after searching again in the same modal', async () => {
     const { handleImport } = setup();
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await page.getByRole('button', { name: 'Import', exact: true }).click();
     await search();
@@ -305,7 +324,7 @@ describe('Jira import deduplication', () => {
 
   it('imports a duplicated search result only once when importing all', async () => {
     const { handleImport } = setup([issue('TEST-1'), issue('TEST-1'), issue('TEST-2')]);
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await page.getByRole('button', { name: 'Import All', exact: true }).click();
     expect(handleImport.mock.calls.map(([story]) => story.referenceId)).toEqual(['TEST-1', 'TEST-2']);
@@ -313,10 +332,10 @@ describe('Jira import deduplication', () => {
 
   it('keeps the same issue key from different Jira instances distinct', async () => {
     const { handleImport } = setup();
-    await page.getByRole('combobox').selectOptions('0');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('0');
     await search();
     await page.getByRole('button', { name: 'Import', exact: true }).click();
-    await page.getByRole('combobox').selectOptions('1');
+    await page.getByRole('combobox', { name: /Jira/ }).selectOptions('1');
     await search();
     await page.getByRole('button', { name: 'Import', exact: true }).click();
     expect(handleImport.mock.calls.map(([story]) => story.link)).toEqual([

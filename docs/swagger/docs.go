@@ -14873,6 +14873,67 @@ const docTemplate = `{
                 ]
             }
         },
+        "/users/{userId}/jira-instances/{instanceId}/issue-types": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jira"
+                ],
+                "summary": "Get Jira issue types",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID owning the Jira instance",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "the Jira instance ID",
+                        "name": "instanceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.standardJsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/thunderdome.JiraIssueTypeOption"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
         "/users/{userId}/jira-instances/{instanceId}/jql-story-search": {
             "post": {
                 "description": "Queries Jira Instance API for Stories by JQL",
@@ -14917,6 +14978,73 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/http.standardJsonResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/users/{userId}/jira-instances/{instanceId}/sprints": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jira"
+                ],
+                "summary": "Get Jira sprint suggestions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "the user ID owning the Jira instance",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "the Jira instance ID",
+                        "name": "instanceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sprint name, up to 200 characters",
+                        "name": "query",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http.standardJsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/thunderdome.JiraSprintOption"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/http.standardJsonResponse"
                         }
@@ -18274,6 +18402,20 @@ const docTemplate = `{
                 }
             }
         },
+        "thunderdome.JiraIssueTypeOption": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "subtask": {
+                    "type": "boolean"
+                }
+            }
+        },
         "thunderdome.JiraNumericField": {
             "type": "object",
             "properties": {
@@ -18281,6 +18423,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "thunderdome.JiraSprintOption": {
+            "type": "object",
+            "properties": {
+                "boardName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "state": {
                     "type": "string"
                 }
             }

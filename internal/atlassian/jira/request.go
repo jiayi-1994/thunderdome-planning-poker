@@ -12,15 +12,21 @@ import (
 )
 
 func newJiraRequest(ctx context.Context, instance thunderdome.JiraInstance, method, resource string, body io.Reader) (*http.Request, error) {
-	base, err := url.Parse(instance.Host)
-	if err != nil || base.Host == "" || (base.Scheme != "https" && base.Scheme != "http") || base.User != nil || base.RawQuery != "" || base.Fragment != "" {
-		return nil, fmt.Errorf("Jira 地址无效，请检查账号配置")
-	}
 	version := "3"
 	if instance.JiraDataCenter {
 		version = "2"
 	}
-	endpoint := strings.TrimRight(base.String(), "/") + "/rest/api/" + version + "/" + resource
+	return newJiraPathRequest(ctx, instance, method, "/rest/api/"+version+"/"+resource, body)
+}
+
+// newJiraPathRequest preserves a configured context path for all Jira APIs.
+// resourcePath is an application-owned API path, never an arbitrary caller URL.
+func newJiraPathRequest(ctx context.Context, instance thunderdome.JiraInstance, method, resourcePath string, body io.Reader) (*http.Request, error) {
+	base, err := url.Parse(instance.Host)
+	if err != nil || base.Host == "" || (base.Scheme != "https" && base.Scheme != "http") || base.User != nil || base.RawQuery != "" || base.Fragment != "" {
+		return nil, fmt.Errorf("Jira 地址无效，请检查账号配置")
+	}
+	endpoint := strings.TrimRight(base.String(), "/") + "/" + strings.TrimLeft(resourcePath, "/")
 	req, err := http.NewRequestWithContext(ctx, method, endpoint, body)
 	if err != nil {
 		return nil, fmt.Errorf("无法创建 Jira 请求")

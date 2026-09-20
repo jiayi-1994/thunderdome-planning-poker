@@ -4,8 +4,9 @@
   import { AppConfig, appRoutes } from '../../config';
   import { user } from '../../stores';
   import LL from '../../i18n/i18n-svelte';
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import FeatureSubscribeBanner from '../global/FeatureSubscribeBanner.svelte';
+  import JiraImportFilters from './JiraImportFilters.svelte';
 
   import type { NotificationService } from '../../types/notifications';
   import type { ApiClient } from '../../types/apiclient';
@@ -60,6 +61,10 @@
   let jiraStories = $state<JiraIssue[]>([]);
   let selectedJiraInstance: string = $state('');
   let searchJQL: string = $state('');
+  let searchMode = $state<'basic' | 'advanced'>('basic');
+  let basicQuery = $state('ORDER BY created DESC');
+  let filtersLoading = $state(true);
+  let advancedInitialized = false;
   let jqlError: string = $state('');
   let importedStoryKeys = $state<string[]>([]);
   let searchCompleted: boolean = $state(false);
@@ -120,9 +125,9 @@
 
   async function handleJQLSearch(event: Event) {
     event.preventDefault();
-    if (searching) return;
+    if (searching || (searchMode === 'basic' && filtersLoading)) return;
 
-    const query = searchJQL.trim();
+    const query = (searchMode === 'basic' ? basicQuery : searchJQL).trim();
     if (!query) {
       notifications.danger($LL.jiraImportUI.queryRequired(), 5000);
       return;
@@ -205,11 +210,20 @@
     availableStories.forEach(importStory);
   }
 
+  function changeSearchMode(mode: 'basic' | 'advanced') {
+    if (mode === 'advanced' && !advancedInitialized) {
+      searchJQL = basicQuery;
+      advancedInitialized = true;
+    }
+    searchMode = mode;
+  }
+
   onMount(() => {
     if ((AppConfig.SubscriptionsEnabled && $user.subscribed) || !AppConfig.SubscriptionsEnabled) {
       getJiraInstances();
     }
   });
+  onDestroy(() => { searchVersion++; });
 </script>
 
 {#if AppConfig.SubscriptionsEnabled && !$user.subscribed}
@@ -232,6 +246,11 @@
           jqlError = '';
           searchCompleted = false;
           searching = false;
+          searchMode = 'basic';
+          basicQuery = 'ORDER BY created DESC';
+          filtersLoading = true;
+          searchJQL = '';
+          advancedInitialized = false;
           dispatch('instance_selected');
         }}
       >
@@ -244,30 +263,58 @@
 
     {#if selectedJiraInstance !== ''}
       <form onsubmit={handleJQLSearch} class="search-form">
-        <label for="jql-search" class="search-label">{$LL.jiraImportUI.searchLabel()}</label>
-        <div class="search-container">
-          <div class="relative flex-1 min-w-0">
-            <div class="search-icon-wrapper">
-              <SearchIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            </div>
-            <input
-              type="search"
-              id="jql-search"
-              class="search-input"
-              placeholder={$LL.jiraImportUI.queryPlaceholder()}
-              bind:value={searchJQL}
+        <div class="flex gap-2 mb-4" role="group" aria-label={$LL.jiraImportUI.searchMode()}>
+          <button type="button" class="mode-button" class:mode-active={searchMode === 'basic'} aria-pressed={searchMode === 'basic'} disabled={searching} onclick={() => changeSearchMode('basic')}>
+            {$LL.jiraImportUI.basicFilters()}
+          </button>
+          <button type="button" class="mode-button" class:mode-active={searchMode === 'advanced'} aria-pressed={searchMode === 'advanced'} disabled={searching} onclick={() => changeSearchMode('advanced')}>
+            {$LL.jiraImportUI.advancedJQL()}
+          </button>
+        </div>
+        <div hidden={searchMode !== 'basic'}>
+          {#key selectedJiraInstance}
+            <JiraImportFilters
+              endpoint={`/api/users/${$user.id}/jira-instances/${jiraInstances[Number(selectedJiraInstance)].id}`}
+              {xfetch}
+              bind:query={basicQuery}
+              bind:loading={filtersLoading}
               disabled={searching}
-              required
             />
-          </div>
-          <button type="submit" class="search-button" disabled={searching} aria-busy={searching}>
+          {/key}
+        </div>
+        {#if searchMode === 'advanced'}
+          <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">{$LL.jiraImportUI.advancedHint()}</p>
+          <label for="jql-search" class="search-label">{$LL.jiraImportUI.searchLabel()}</label>
+        {:else}
+          <p class="search-label">{$LL.jiraImportUI.queryPreview()}</p>
+        {/if}
+        <div class="search-container">
+          {#if searchMode === 'advanced'}
+            <div class="relative flex-1 min-w-0">
+              <div class="search-icon-wrapper">
+                <SearchIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+              <input
+                type="search"
+                id="jql-search"
+                class="search-input"
+                placeholder={$LL.jiraImportUI.queryPlaceholder()}
+                bind:value={searchJQL}
+                disabled={searching}
+                required
+              />
+            </div>
+          {:else}
+            <code class="flex-1 min-w-0 p-3 rounded bg-gray-100 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 break-words" aria-label={$LL.jiraImportUI.queryPreview()}>{basicQuery}</code>
+          {/if}
+          <button type="submit" class="search-button" disabled={searching || (searchMode === 'basic' && filtersLoading)} aria-busy={searching}>
             {#if searching}<LoaderCircle class="w-4 h-4 motion-safe:animate-spin" aria-hidden="true" />{/if}
             {searching ? $LL.jiraImportUI.searching() : $LL.jiraImportUI.search()}
           </button>
         </div>
       </form>
 
-      <details open class="mb-4 text-sm text-gray-700 dark:text-gray-300">
+      <details class="mb-4 text-sm text-gray-700 dark:text-gray-300">
         <summary class="cursor-pointer font-medium rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">
           {$LL.jiraImportUI.commonConditions()}
         </summary>
@@ -344,7 +391,7 @@
   }
 
   .search-label {
-    @apply mb-2 text-sm font-medium text-gray-900 sr-only;
+    @apply block mb-2 text-sm font-medium text-gray-900;
   }
 
   :root.dark .search-label {
@@ -381,6 +428,14 @@
 
   .search-button {
     @apply text-white bg-blue-700 font-medium rounded-lg text-sm px-4 py-2 inline-flex items-center justify-center gap-2 shrink-0;
+  }
+
+  .mode-button {
+    @apply px-3 py-2 rounded text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 disabled:opacity-60;
+  }
+
+  .mode-active {
+    @apply bg-blue-50 text-blue-700 dark:bg-gray-700 dark:text-blue-300;
   }
 
   .search-button:disabled {

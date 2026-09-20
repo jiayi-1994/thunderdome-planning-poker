@@ -20,3 +20,18 @@ type JiraConnectionStatus struct {
 	Connected   bool   `json:"connected"`
 	DisplayName string `json:"display_name,omitempty"`
 }
+
+// JiraIssueTypeOption contains only the fields needed by the import filter.
+type JiraIssueTypeOption struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Subtask bool   `json:"subtask"`
+}
+
+// JiraSprintOption uses normalized active, future, or closed states.
+type JiraSprintOption struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	State     string `json:"state"`
+	BoardName string `json:"boardName"`
+}
