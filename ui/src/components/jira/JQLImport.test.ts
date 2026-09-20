@@ -32,7 +32,7 @@ const instances = [
 ];
 
 function metadataResponse(url: string) {
-  if (url.endsWith('/issue-types')) return response([{ id: 'story', name: 'Story', subtask: false }]);
+  if (url.endsWith('/issue-types')) return response([{ id: '10001', name: 'Story', subtask: false }]);
   if (url.includes('/sprints?')) return response([]);
   return undefined;
 }

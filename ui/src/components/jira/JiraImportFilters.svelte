@@ -41,7 +41,8 @@
   $effect(() => {
     const issueType = issueTypes.find(type => type.id === selectedIssueType);
     const clauses: string[] = [];
-    if (issueType) clauses.push(`issuetype = "${issueType.name.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+    // Jira can localize display names; queries must use the stable instance-specific ID.
+    if (issueType) clauses.push(`issuetype = "${issueType.id.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
     if (selectedSprintId) clauses.push(`Sprint = ${selectedSprintId}`);
     query = clauses.join(' AND ') || 'ORDER BY created DESC';
     loading = issueTypesLoading || sprintsLoading;

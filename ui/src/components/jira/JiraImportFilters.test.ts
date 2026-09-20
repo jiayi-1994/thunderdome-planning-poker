@@ -23,8 +23,8 @@ const instances = [
   { id: 'two', host: 'https://other.example.com' },
 ];
 const issueTypes = [
-  { id: 'story', name: 'Story', subtask: false },
-  { id: 'bug', name: 'Bug', subtask: false },
+  { id: '10001', name: 'Story', subtask: false },
+  { id: '10002', name: 'Bug', subtask: false },
 ];
 const sprint = { id: 577, name: 'ZStack Zaku Sprint41', state: 'active', boardName: 'Edge board' };
 const upcomingSprint = { id: 578, name: 'ZStack Zaku Sprint42', state: 'future', boardName: 'Edge board' };
@@ -50,37 +50,69 @@ function defaultResponse(url: string) {
 }
 
 describe('Jira basic filters', () => {
-  it('defaults to the real Story type and submits the selected sprint ID in JQL', async () => {
+  it('defaults to the real Story type and submits the issue type and sprint IDs in JQL', async () => {
     const xfetch = vi.fn<ApiClient>(async url => defaultResponse(url));
     const handleImport = vi.fn();
     render(JQLImport, { notifications, xfetch, handleImport });
     await instanceSelect().selectOptions('0');
-    await expect.element(typeSelect()).toHaveValue('story');
+    await expect.element(typeSelect()).toHaveValue('10001');
     await expect.element(sprintSelect()).toHaveTextContent('ZStack Zaku Sprint41 · Active · Edge board · #577');
     await sprintSelect().selectOptions('577');
-    await expect.element(page.getByText('issuetype = "Story" AND Sprint = 577', { exact: true })).toBeVisible();
+    await expect.element(page.getByText('issuetype = "10001" AND Sprint = 577', { exact: true })).toBeVisible();
     await submit().click();
     expect(xfetch).toHaveBeenCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
-      body: { jql: 'issuetype = "Story" AND Sprint = 577', startAt: 0, maxResults: 100 },
+      body: { jql: 'issuetype = "10001" AND Sprint = 577', startAt: 0, maxResults: 100 },
     });
     expect(handleImport).not.toHaveBeenCalled();
   });
 
-  it('escapes issue type names and leaves all types selected when Story is unavailable', async () => {
-    const typeName = 'Product "request" \\ draft';
+  it('keeps localized issue type labels while using stable IDs in previews and search requests', async () => {
     const xfetch = vi.fn<ApiClient>(async url =>
       url.endsWith('/issue-types')
-        ? response([{ id: 'custom', name: typeName, subtask: false }])
+        ? response([{ id: '10427', name: '故事', subtask: false }])
+        : defaultResponse(url),
+    );
+    render(JQLImport, { notifications, xfetch });
+    await instanceSelect().selectOptions('0');
+    await typeSelect().selectOptions('10427');
+    await expect.element(typeSelect()).toHaveTextContent('故事');
+    await sprintSelect().selectOptions('577');
+    const generated = 'issuetype = "10427" AND Sprint = 577';
+    await expect.element(page.getByText(generated, { exact: true })).toBeVisible();
+    await submit().click();
+    expect(xfetch).toHaveBeenLastCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
+      body: { jql: generated, startAt: 0, maxResults: 100 },
+    });
+    await page.getByRole('button', { name: 'Advanced JQL', exact: true }).click();
+    await expect.element(page.getByRole('searchbox')).toHaveValue(generated);
+    const manual = 'issuetype = Story AND Sprint = 577';
+    await page.getByRole('searchbox').fill(manual);
+    await page.getByRole('button', { name: 'Basic filters', exact: true }).click();
+    await page.getByRole('button', { name: 'Advanced JQL', exact: true }).click();
+    await expect.element(page.getByRole('searchbox')).toHaveValue(manual);
+    await submit().click();
+    expect(xfetch).toHaveBeenLastCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
+      body: { jql: manual, startAt: 0, maxResults: 100 },
+    });
+  });
+
+  it('uses the ID of custom localized types and leaves all types selected when Story is unavailable', async () => {
+    const typeName = '产品 "需求" \\ 草稿';
+    const xfetch = vi.fn<ApiClient>(async url =>
+      url.endsWith('/issue-types')
+        ? response([{ id: '10428', name: typeName, subtask: false }])
         : defaultResponse(url),
     );
     render(JQLImport, { notifications, xfetch });
     await instanceSelect().selectOptions('0');
     await expect.element(typeSelect()).toBeEnabled();
     await expect.element(typeSelect()).toHaveValue('');
-    await typeSelect().selectOptions('custom');
+    await typeSelect().selectOptions('10428');
+    await expect.element(typeSelect()).toHaveTextContent(typeName);
+    await expect.element(page.getByText('issuetype = "10428"', { exact: true })).toBeVisible();
     await submit().click();
     expect(xfetch).toHaveBeenCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
-      body: { jql: 'issuetype = "Product \\"request\\" \\\\ draft"', startAt: 0, maxResults: 100 },
+      body: { jql: 'issuetype = "10428"', startAt: 0, maxResults: 100 },
     });
   });
 
@@ -101,18 +133,18 @@ describe('Jira basic filters', () => {
     await expect.element(sprintSelect()).toHaveValue('577');
     await expect.element(sprintSelect()).toHaveTextContent('ZStack Zaku Sprint41');
     await sprintSelect().selectOptions('');
-    await expect.element(page.getByText('issuetype = "Story"', { exact: true })).toBeVisible();
+    await expect.element(page.getByText('issuetype = "10001"', { exact: true })).toBeVisible();
     await expect.element(sprintSelect()).not.toHaveTextContent('ZStack Zaku Sprint41');
     await submit().click();
     expect(xfetch).toHaveBeenLastCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
-      body: { jql: 'issuetype = "Story"', startAt: 0, maxResults: 100 },
+      body: { jql: 'issuetype = "10001"', startAt: 0, maxResults: 100 },
     });
   });
 
   it('ignores old metadata after switching instances', async () => {
     const oldTypes = deferred<Response>();
     const oldSprints = deferred<Response>();
-    const typeResponse = response([{ id: 'old', name: 'Old issue type', subtask: false }]);
+    const typeResponse = response([{ id: '10003', name: 'Old issue type', subtask: false }]);
     const sprintResponse = response([{ ...sprint, name: 'Old sprint' }]);
     render(JQLImport, {
       notifications,
@@ -125,14 +157,14 @@ describe('Jira basic filters', () => {
     await instanceSelect().selectOptions('0');
     await expect.element(typeSelect()).toBeDisabled();
     await instanceSelect().selectOptions('1');
-    await expect.element(typeSelect()).toHaveValue('story');
+    await expect.element(typeSelect()).toHaveValue('10001');
     oldTypes.resolve(typeResponse);
     oldSprints.resolve(sprintResponse);
     await expect.poll(() => typeResponse.bodyUsed && sprintResponse.bodyUsed).toBe(true);
     await tick();
     await expect.element(typeSelect()).not.toHaveTextContent('Old issue type');
     await expect.element(sprintSelect()).not.toHaveTextContent('Old sprint');
-    await expect.element(typeSelect()).toHaveValue('story');
+    await expect.element(typeSelect()).toHaveValue('10001');
   });
 
   it('keeps the latest sprint search when an older name search resolves later', async () => {
@@ -180,7 +212,7 @@ describe('Jira basic filters', () => {
     await page.getByRole('searchbox').fill(manual);
     types.resolve(response(issueTypes));
     sprints.resolve(response([sprint]));
-    await expect.poll(() => document.querySelector<HTMLSelectElement>('#jira-issue-type')?.value).toBe('story');
+    await expect.poll(() => document.querySelector<HTMLSelectElement>('#jira-issue-type')?.value).toBe('10001');
     await expect.element(page.getByRole('searchbox')).toHaveValue(manual);
     await page.getByRole('button', { name: 'Basic filters', exact: true }).click();
     await sprintSelect().selectOptions('577');
@@ -226,7 +258,7 @@ describe('Jira basic filters', () => {
     await expect.element(page.getByText('No matching sprints. Try another name or use Advanced JQL.')).toBeVisible();
     retry = true;
     await page.getByRole('button', { name: 'Retry issue types' }).click();
-    await expect.element(typeSelect()).toHaveValue('story');
+    await expect.element(typeSelect()).toHaveValue('10001');
     await expect.element(page.getByRole('button', { name: 'Retry issue types' })).not.toBeInTheDocument();
   });
 });
