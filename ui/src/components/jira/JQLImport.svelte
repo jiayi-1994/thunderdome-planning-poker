@@ -62,7 +62,7 @@
   let selectedJiraInstance: string = $state('');
   let searchJQL: string = $state('');
   let searchMode = $state<'basic' | 'advanced'>('basic');
-  let basicQuery = $state('ORDER BY created DESC');
+  let basicQuery = $state('ORDER BY key ASC');
   let filtersLoading = $state(true);
   let advancedInitialized = false;
   let jqlError: string = $state('');
@@ -247,7 +247,7 @@
           searchCompleted = false;
           searching = false;
           searchMode = 'basic';
-          basicQuery = 'ORDER BY created DESC';
+          basicQuery = 'ORDER BY key ASC';
           filtersLoading = true;
           searchJQL = '';
           advancedInitialized = false;

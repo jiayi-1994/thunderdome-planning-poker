@@ -7,6 +7,7 @@ import { loadLocale } from '../../i18n/i18n-util.sync';
 import JQLImport from './JQLImport.svelte';
 import CreatePokerGame from '../poker/CreatePokerGame.svelte';
 import PokerStories from '../poker/PokerStories.svelte';
+import type { ApiClient } from '../../types/apiclient';
 
 vi.mock('../../stores', async () => {
   const { writable } = await import('svelte/store');
@@ -213,6 +214,50 @@ describe('Jira search feedback', () => {
       setLocale('en');
     }
   });
+});
+
+describe('Jira import ordering', () => {
+  it.each([
+    { scope: 'user', apiPrefix: '/api', endpoint: '/api/users/user/battles' },
+    { scope: 'project', apiPrefix: '/api/projects/project', endpoint: '/api/projects/project/poker' },
+  ] as const)(
+    'preserves search order in the $scope creation draft and submitted stories',
+    async ({ scope, apiPrefix, endpoint }) => {
+      const keys = ['TEST-2', 'TEST-10', 'TEST-100'];
+      const xfetch = vi.fn<ApiClient>(async url => {
+        if (url.endsWith(endpoint)) return response({ id: 'created' });
+        if (url.includes('/sprints?'))
+          return response([{ id: 577, name: 'Sprint 41', state: 'active', boardName: 'Test' }]);
+        if (metadataResponse(url)) return metadataResponse(url)!;
+        if (url.endsWith('jira-instances')) return response(instances);
+        if (url.endsWith('jql-story-search')) return response({ issues: keys.map(issue) });
+        if (url.endsWith('/estimation-scales/public'))
+          return response([{ id: 'default', name: 'Default', defaultScale: true, values: ['1', '2'] }]);
+        return response([]);
+      });
+      render(CreatePokerGame, { notifications, router: { route: vi.fn() }, xfetch, scope, apiPrefix });
+      await page.getByRole('button', { name: 'Import Stories', exact: true }).click();
+      await page.getByRole('dialog').getByRole('combobox', { name: /Jira/ }).selectOptions('0');
+      await page.getByRole('combobox', { name: 'Sprint', exact: true }).selectOptions('577');
+      await page.getByRole('button', { name: 'Search', exact: true }).click();
+      expect(xfetch).toHaveBeenCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
+        body: { jql: 'issuetype = "10001" AND Sprint = 577 ORDER BY key ASC', startAt: 0, maxResults: 100 },
+      });
+      await page.getByRole('button', { name: 'Import All', exact: true }).click();
+      await page.getByRole('button', { name: 'Close modal' }).click();
+      expect(
+        Array.from(
+          document.querySelectorAll<HTMLInputElement>('input[placeholder="Enter a story name"]'),
+          input => input.value,
+        ),
+      ).toEqual(keys.map(key => `Story ${key}`));
+      await page.getByRole('textbox', { name: 'Game Name', exact: true }).fill('Sprint planning');
+      await page.getByRole('button', { name: 'Create Game', exact: true }).click();
+      await expect
+        .poll(() => xfetch.mock.calls.find(([url]) => url === endpoint)?.[1]?.body)
+        .toMatchObject({ plans: keys.map(referenceId => ({ referenceId })) });
+    },
+  );
 });
 
 describe('Jira import deduplication', () => {

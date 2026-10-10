@@ -50,6 +50,19 @@ function defaultResponse(url: string) {
 }
 
 describe('Jira basic filters', () => {
+  it('keeps issue key ascending order when all filters are cleared', async () => {
+    const xfetch = vi.fn<ApiClient>(async url => defaultResponse(url));
+    render(JQLImport, { notifications, xfetch });
+    await instanceSelect().selectOptions('0');
+    await expect.element(typeSelect()).toHaveValue('10001');
+    await typeSelect().selectOptions('');
+    await expect.element(page.getByText('ORDER BY key ASC', { exact: true })).toBeVisible();
+    await submit().click();
+    expect(xfetch).toHaveBeenLastCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
+      body: { jql: 'ORDER BY key ASC', startAt: 0, maxResults: 100 },
+    });
+  });
+
   it('defaults to the real Story type and submits the issue type and sprint IDs in JQL', async () => {
     const xfetch = vi.fn<ApiClient>(async url => defaultResponse(url));
     const handleImport = vi.fn();
@@ -58,26 +71,26 @@ describe('Jira basic filters', () => {
     await expect.element(typeSelect()).toHaveValue('10001');
     await expect.element(sprintSelect()).toHaveTextContent('ZStack Zaku Sprint41 · Active · Edge board · #577');
     await sprintSelect().selectOptions('577');
-    await expect.element(page.getByText('issuetype = "10001" AND Sprint = 577', { exact: true })).toBeVisible();
+    await expect
+      .element(page.getByText('issuetype = "10001" AND Sprint = 577 ORDER BY key ASC', { exact: true }))
+      .toBeVisible();
     await submit().click();
     expect(xfetch).toHaveBeenCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
-      body: { jql: 'issuetype = "10001" AND Sprint = 577', startAt: 0, maxResults: 100 },
+      body: { jql: 'issuetype = "10001" AND Sprint = 577 ORDER BY key ASC', startAt: 0, maxResults: 100 },
     });
     expect(handleImport).not.toHaveBeenCalled();
   });
 
   it('keeps localized issue type labels while using stable IDs in previews and search requests', async () => {
     const xfetch = vi.fn<ApiClient>(async url =>
-      url.endsWith('/issue-types')
-        ? response([{ id: '10427', name: '故事', subtask: false }])
-        : defaultResponse(url),
+      url.endsWith('/issue-types') ? response([{ id: '10427', name: '故事', subtask: false }]) : defaultResponse(url),
     );
     render(JQLImport, { notifications, xfetch });
     await instanceSelect().selectOptions('0');
     await typeSelect().selectOptions('10427');
     await expect.element(typeSelect()).toHaveTextContent('故事');
     await sprintSelect().selectOptions('577');
-    const generated = 'issuetype = "10427" AND Sprint = 577';
+    const generated = 'issuetype = "10427" AND Sprint = 577 ORDER BY key ASC';
     await expect.element(page.getByText(generated, { exact: true })).toBeVisible();
     await submit().click();
     expect(xfetch).toHaveBeenLastCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
@@ -99,9 +112,7 @@ describe('Jira basic filters', () => {
   it('uses the ID of custom localized types and leaves all types selected when Story is unavailable', async () => {
     const typeName = '产品 "需求" \\ 草稿';
     const xfetch = vi.fn<ApiClient>(async url =>
-      url.endsWith('/issue-types')
-        ? response([{ id: '10428', name: typeName, subtask: false }])
-        : defaultResponse(url),
+      url.endsWith('/issue-types') ? response([{ id: '10428', name: typeName, subtask: false }]) : defaultResponse(url),
     );
     render(JQLImport, { notifications, xfetch });
     await instanceSelect().selectOptions('0');
@@ -109,10 +120,10 @@ describe('Jira basic filters', () => {
     await expect.element(typeSelect()).toHaveValue('');
     await typeSelect().selectOptions('10428');
     await expect.element(typeSelect()).toHaveTextContent(typeName);
-    await expect.element(page.getByText('issuetype = "10428"', { exact: true })).toBeVisible();
+    await expect.element(page.getByText('issuetype = "10428" ORDER BY key ASC', { exact: true })).toBeVisible();
     await submit().click();
     expect(xfetch).toHaveBeenCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
-      body: { jql: 'issuetype = "10428"', startAt: 0, maxResults: 100 },
+      body: { jql: 'issuetype = "10428" ORDER BY key ASC', startAt: 0, maxResults: 100 },
     });
   });
 
@@ -133,11 +144,11 @@ describe('Jira basic filters', () => {
     await expect.element(sprintSelect()).toHaveValue('577');
     await expect.element(sprintSelect()).toHaveTextContent('ZStack Zaku Sprint41');
     await sprintSelect().selectOptions('');
-    await expect.element(page.getByText('issuetype = "10001"', { exact: true })).toBeVisible();
+    await expect.element(page.getByText('issuetype = "10001" ORDER BY key ASC', { exact: true })).toBeVisible();
     await expect.element(sprintSelect()).not.toHaveTextContent('ZStack Zaku Sprint41');
     await submit().click();
     expect(xfetch).toHaveBeenLastCalledWith('/api/users/user/jira-instances/one/jql-story-search', {
-      body: { jql: 'issuetype = "10001"', startAt: 0, maxResults: 100 },
+      body: { jql: 'issuetype = "10001" ORDER BY key ASC', startAt: 0, maxResults: 100 },
     });
   });
 

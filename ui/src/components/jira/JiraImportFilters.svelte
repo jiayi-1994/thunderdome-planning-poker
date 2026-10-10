@@ -44,7 +44,7 @@
     // Jira can localize display names; queries must use the stable instance-specific ID.
     if (issueType) clauses.push(`issuetype = "${issueType.id.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
     if (selectedSprintId) clauses.push(`Sprint = ${selectedSprintId}`);
-    query = clauses.join(' AND ') || 'ORDER BY created DESC';
+    query = `${clauses.join(' AND ')} ORDER BY key ASC`.trim();
     loading = issueTypesLoading || sprintsLoading;
   });
 

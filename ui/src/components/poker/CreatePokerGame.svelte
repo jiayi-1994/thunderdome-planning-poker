@@ -85,7 +85,7 @@
       description: newPlan.description,
       acceptanceCriteria: newPlan.acceptanceCriteria,
     };
-    plans.unshift(plan);
+    plans.push(plan);
     plans = plans;
   }
 
