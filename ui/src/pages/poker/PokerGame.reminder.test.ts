@@ -137,6 +137,26 @@ describe('PokerGame voting reminder eligibility', () => {
     localStorage.removeItem('poker-role:reminder-game:self');
   });
 
+  it('counts the visible participants as users join, leave, and become inactive', async () => {
+    const state = game();
+    state.users.push({ ...participant('offline'), active: false });
+    await openGame(state);
+    const heading = page.getByRole('heading', { name: /^Players/ });
+    await expect.element(heading).toHaveTextContent('Players (2)');
+
+    state.users.push({ ...participant('observer'), spectator: true });
+    await event('user_joined', state.users, 'observer');
+    await expect.element(heading).toHaveTextContent('Players (3)');
+
+    state.users = state.users.filter(person => person.id !== 'observer');
+    await event('user_left', state.users, 'observer');
+    await expect.element(heading).toHaveTextContent('Players (2)');
+
+    state.users = state.users.map(person => (person.id === 'other' ? { ...person, active: false } : person));
+    await event('users_updated', state.users);
+    await expect.element(heading).toHaveTextContent('Players (1)');
+  });
+
   it.each([
     { name: 'category', ballot: { warriorId: 'self', category: 'backend', vote: '' } satisfies PokerStoryVote },
     { name: 'legacy', ballot: { warriorId: 'self', vote: '' } satisfies PokerStoryVote },
@@ -183,9 +203,11 @@ describe('PokerGame voting reminder eligibility', () => {
     state.users[0].spectator = false;
     await event('users_updated', state.users);
     await expect.element(reminder()).toBeVisible();
+    state.plans[0].active = false;
     await event('voting_ended', state.plans);
     await expect.element(reminder()).not.toBeInTheDocument();
 
+    state.plans[0].active = true;
     await event('init', state);
     await expect.element(reminder()).toBeVisible();
     await event('game_ended', { endTime: now.toISOString(), endReason: 'Finished' });
@@ -201,6 +223,62 @@ describe('PokerGame voting reminder eligibility', () => {
     await expect.element(reminder()).toBeVisible();
     user.update({ ...sessionUser, notificationsEnabled: false });
     await expect.element(reminder()).not.toBeInTheDocument();
+  });
+
+  it.each(['voting_ended', 'voting_expired'])(
+    'clears voting controls when %s includes an automatically saved result',
+    async type => {
+      const state = game();
+      state.leaders = ['self'];
+      await openGame(state);
+      state.plans[0].active = false;
+      state.plans[0].points = '0';
+      state.plans[0].votes = [{ warriorId: 'self', category: 'backend', vote: '0' }];
+      await event(
+        type,
+        type === 'voting_expired'
+          ? { planId: 'story', voteStartTime: state.plans[0].voteStartTime, plans: state.plans }
+          : state.plans,
+      );
+      await expect.element(page.getByTestId('voting-save')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('voting-restart')).not.toBeInTheDocument();
+      await expect.element(page.getByRole('timer')).not.toBeInTheDocument();
+      await expect.element(reminder()).not.toBeInTheDocument();
+      expect(socket.send.mock.calls.some(([raw]) => JSON.parse(raw).type === 'finalize_plan')).toBe(false);
+    },
+  );
+
+  it('keeps manual Save and Restart when a timed-out round was not automatically saved', async () => {
+    const state = game();
+    state.leaders = ['self'];
+    await openGame(state);
+    state.plans[0].active = false;
+    state.plans[0].votes = [{ warriorId: 'self', category: 'backend', vote: '5' }];
+    state.plans[0].estimation = { total: '5', categories: [{ category: 'backend', average: '5', count: 1 }] };
+    await event('voting_expired', { planId: 'story', voteStartTime: state.plans[0].voteStartTime, plans: state.plans });
+    await expect.element(page.getByTestId('voting-save')).toBeEnabled();
+    await expect.element(page.getByTestId('voting-restart')).toBeVisible();
+    await expect
+      .element(
+        page.getByText('本轮已超时，评分人数不足一半或没有有效评分，未自动保存。可确认结果后手动保存，或重新评点。'),
+      )
+      .toBeVisible();
+    await page.getByTestId('voting-save').click();
+    expect(JSON.parse(socket.send.mock.calls.at(-1)![0])).toMatchObject({ type: 'finalize_plan' });
+  });
+
+  it.each(['voting_ended', 'voting_expired'])('ignores a saved %s result from an earlier round', async type => {
+    const state = await openGame();
+    const oldRound = { ...state.plans[0], active: false, points: '5' };
+    state.plans[0] = { ...state.plans[0], voteStartTime: now, voteDeadline: new Date(now.getTime() + 300000) };
+    await event('plan_activated', state.plans);
+    await event(
+      type,
+      type === 'voting_expired'
+        ? { planId: oldRound.id, voteStartTime: oldRound.voteStartTime, plans: [oldRound] }
+        : [oldRound],
+    );
+    await expect.element(page.getByRole('timer')).toHaveTextContent('05:00');
   });
 
   it('waits for fresh server state after reconnecting', async () => {

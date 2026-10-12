@@ -205,18 +205,39 @@ func (d *Service) RetractVote(pokerID string, userID string, storyID string, cat
 	return stories, nil
 }
 
-// EndStoryVoting sets story to active: false
+// EndStoryVoting closes and saves the current round in one transaction.
 func (d *Service) EndStoryVoting(pokerID string, storyID string) ([]*thunderdome.Story, error) {
-	if _, err := d.DB.Exec(
-		`CALL thunderdome.poker_plan_voting_stop($1, $2);`, pokerID, storyID); err != nil {
-		d.Logger.Error("CALL thunderdome.poker_plan_voting_stop error", zap.Error(err),
-			zap.String("PokerID", pokerID), zap.String("StoryID", storyID))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	tx, err := d.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	var timedOut bool
+	if err := tx.QueryRowContext(ctx, `SELECT s.votestart_time + (s.voting_duration_seconds * interval '1 second') <= clock_timestamp()
+		FROM thunderdome.poker_story s JOIN thunderdome.poker p ON p.id = s.poker_id
+		WHERE s.id = $2 AND p.id = $1 AND p.active_story_id = s.id
+		AND s.active AND NOT p.voting_locked AND p.end_time IS NULL
+		FOR UPDATE OF s, p`, pokerID, storyID).Scan(&timedOut); err != nil {
 		return nil, fmt.Errorf("end poker voting: %w", err)
 	}
-
-	stories := d.GetStories(pokerID, "")
-
-	return stories, nil
+	if _, err := tx.ExecContext(ctx, `UPDATE thunderdome.poker_story SET active = false,
+		voteend_time = CASE WHEN $3 THEN votestart_time + (voting_duration_seconds * interval '1 second') ELSE clock_timestamp() END,
+		updated_date = now() WHERE id = $2 AND poker_id = $1`, pokerID, storyID, timedOut); err != nil {
+		return nil, err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE thunderdome.poker SET voting_locked = true,
+		updated_date = now(), last_active = now() WHERE id = $1`, pokerID); err != nil {
+		return nil, err
+	}
+	if err := autoSaveStory(ctx, tx, pokerID, storyID, timedOut); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return d.GetStories(pokerID, ""), nil
 }
 
 // SkipStory sets story to active: false and unsets games activeStoryId

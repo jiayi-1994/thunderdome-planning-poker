@@ -14,13 +14,13 @@ describe('configurable voting countdown', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('visibly counts down from 02:00 and expires at 00:00', async () => {
+  it('visibly counts down from 05:00 and expires at 00:00', async () => {
     const onExpire = vi.fn();
     render(VoteTimer, { currentStoryId: 'story', voteStartTime: startTime, votingLocked: false, onExpire });
-    await expect.element(page.getByRole('timer')).toHaveTextContent('02:00');
+    await expect.element(page.getByRole('timer')).toHaveTextContent('05:00');
     await vi.advanceTimersByTimeAsync(1000);
-    await expect.element(page.getByRole('timer')).toHaveTextContent('01:59');
-    await vi.advanceTimersByTimeAsync(89000);
+    await expect.element(page.getByRole('timer')).toHaveTextContent('04:59');
+    await vi.advanceTimersByTimeAsync(269000);
     await expect.element(page.getByRole('timer')).toHaveTextContent('00:30');
     await expect.element(page.getByRole('timer')).toHaveClass('text-red-700');
     await vi.advanceTimersByTimeAsync(30000);
@@ -31,10 +31,10 @@ describe('configurable voting countdown', () => {
     await expect.element(page.getByRole('timer')).toHaveTextContent('00:00');
   });
 
-  it('restores the remaining time on reload instead of starting another two minutes', async () => {
+  it('restores the remaining time on reload instead of starting another five minutes', async () => {
     vi.setSystemTime(new Date(startTime.getTime() + 75000));
     render(VoteTimer, { currentStoryId: 'story', voteStartTime: startTime, votingLocked: false });
-    await expect.element(page.getByRole('timer')).toHaveTextContent('00:45');
+    await expect.element(page.getByRole('timer')).toHaveTextContent('03:45');
   });
 
   it('starts the personal reminder at 30 seconds and clears it at the deadline', async () => {
@@ -62,12 +62,12 @@ describe('configurable voting countdown', () => {
       reminderScope: 'game:user',
       needsVote: true,
     });
-    await expect.element(page.getByRole('timer')).toHaveTextContent('02:00');
-    vi.setSystemTime(new Date(startTime.getTime() + 95000));
+    await expect.element(page.getByRole('timer')).toHaveTextContent('05:00');
+    vi.setSystemTime(new Date(startTime.getTime() + 275000));
     document.dispatchEvent(new Event('visibilitychange'));
     await expect.element(page.getByRole('timer')).toHaveTextContent('00:25');
     await expect.element(page.getByRole('alert')).toBeInTheDocument();
-    vi.setSystemTime(new Date(startTime.getTime() + 125000));
+    vi.setSystemTime(new Date(startTime.getTime() + 305000));
     window.dispatchEvent(new Event('focus'));
     await expect.element(page.getByRole('timer')).toHaveTextContent('00:00');
     await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
@@ -104,7 +104,7 @@ describe('configurable voting countdown', () => {
   });
 
   it('never shows negative time and ignores expirations from previous rounds', () => {
-    expect(remainingVotingSeconds(startTime, undefined, startTime.getTime() + 180000)).toBe(0);
+    expect(remainingVotingSeconds(startTime, undefined, startTime.getTime() + 360000)).toBe(0);
     expect(
       expirationMatchesRound({ id: 'one', voteStartTime: startTime }, { planId: 'one', voteStartTime: startTime }),
     ).toBe(true);

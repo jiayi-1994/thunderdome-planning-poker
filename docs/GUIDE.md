@@ -157,7 +157,7 @@ You can create a game to determine the size of a story, or join one in progress.
 - Name
 - Team (optional)
 - Point Range Allowed: [ 0, 1/2, 1, 2, 3, 5, 8 ]. Higher values and abstention/coffee cards are no longer offered. Historical results and calculated totals are retained.
-- Voting countdown: defaults to 2 minutes. A facilitator can set 1–60 whole minutes in **Game Settings**. Changes apply when the next round starts; an active round retains its deadline, including after reload or reconnect.
+- Voting countdown: defaults to 5 minutes. A facilitator can set 1–60 whole minutes in **Game Settings**. Changes apply when the next round starts; an active round retains its deadline, including after reload or reconnect.
 - Stories  
   Upload an XML or CSV for stories, or add manually. See note in Stories.
 - Point Average Rounding, default: Ceil  
@@ -180,7 +180,7 @@ If the team agrees, the game is over. If not, then it has just begun!
 
 Choose **测试**, **前端开发**, or **后端开发** before voting. Only that role's cards are shown. The browser remembers the choice for this user and game. After casting a ballot, retract it before changing roles; a new round allows another choice. Spectators see the results without voting cards.
 
-When voting ends, everyone sees all three category averages and their total. A category with at least four distinct numeric scores displays **需要讨论**, with its score values. For example, `1/2`, `1`, `3`, and `5` triggers a warning; repeated scores, equivalent values such as `1/2` and `0.5`, nonvoters, and abstentions do not increase the distinct count. Saved results retain the warning. The warning is advisory; Jira writeback is queued only after the facilitator clicks **Save** (保存).
+When voting ends, the result is automatically saved with all three category averages and their total. A timed-out round is saved automatically only when at least half of the active nonspectators submitted a numeric vote; count each person once, even if they voted in several categories. Exactly half qualifies, and zero is a numeric vote. Otherwise, the facilitator can review the result and click **Save** (保存) or restart voting. A category with at least four distinct numeric scores displays **需要讨论**, with its score values. Repeated scores, equivalent values such as `1/2` and `0.5`, nonvoters, and abstentions do not increase the distinct count. Saved results retain this advisory warning, which does not block automatic saving.
 
 ### Stories
 
@@ -194,7 +194,7 @@ JQL imports exclude issues already in the meeting, including stories that have b
 
 #### Write saved estimates back to Jira
 
-When you create a personal, team, or project poker game, Jira writeback is enabled automatically if your account has exactly one Jira connection with exactly one numeric **Story Points** field (case-insensitive name, ignoring surrounding whitespace). New games without a configured Jira connection keep writeback disabled. Initialization only reads field metadata; Jira points are written only after **Save** (保存). Existing games and manually disabled settings are not changed.
+When you create a personal, team, or project poker game, Jira writeback is enabled automatically if your account has exactly one Jira connection with exactly one numeric **Story Points** field (case-insensitive name, ignoring surrounding whitespace). New games without a configured Jira connection keep writeback disabled. Initialization only reads field metadata; Jira points are written after an automatic or manual save. Existing games and manually disabled settings are not changed.
 
 If there are multiple Jira connections, missing or ambiguous fields, connection/permission errors, or settings cannot be saved, the game is still created and a warning explains how to finish setup in **Jira 点数回写**. Initialization is limited to five seconds. Creation on behalf of another user never authorizes that user's credentials; existing subscription requirements still apply.
 
@@ -203,9 +203,9 @@ If there are multiple Jira connections, missing or ambiguous fields, connection/
 3. If automatic setup did not apply, enable writeback after **Save** and choose your Jira connection. The site's **Story Points** field is selected automatically when it has a unique match; an existing valid field selection is preserved. The account must be allowed to edit that field on the target issues. If Story Points is missing or ambiguous, check the Jira field configuration or select the intended numeric field before saving.
 4. Import stories from Jira, or fill in each story's Jira reference ID and matching issue link. For example, `PROJ-123` and `https://yourjira.atlassian.net/browse/PROJ-123`.
 
-When the configured countdown ends, a facilitator finishes voting, or auto-finish ends the round, the result is displayed without writing to Jira. Click **Save** below the result to save and queue the sum of the testing, frontend, and backend averages for writeback. Only numeric votes count toward each average; nonvoters and historical abstentions do not count. Zero is a valid estimate. Calculated totals can exceed the highest individual card. A round with no numeric votes cannot be saved and does not overwrite Jira. Legacy single-category voting also writes only after the facilitator saves its final numeric estimate.
+When a facilitator finishes voting or auto-finish ends the round, the server saves the result and queues Jira writeback. Countdown expiry does the same when at least half of the active nonspectators have submitted a numeric vote; lower turnout requires manual **Save**. This works without a connected facilitator. Only numeric votes count toward each category average; nonvoters and historical abstentions do not count. Zero is a valid estimate. Calculated totals can exceed the highest individual card. A round with no numeric votes cannot be saved and does not overwrite Jira. Legacy voting automatically saves the most frequent numeric score, choosing the higher score on a tie.
 
-The result area first prompts the facilitator to click Save, then shows pending, successful, or failed writeback. After Save, the server retries failed requests up to three total attempts, including after a restart. A facilitator can use **重试回写** after fixing account permissions or connection details. The local estimate remains available when Jira is unreachable. Reopening a voting round discards its previous task; changing the destination or disabling writeback cancels affected tasks. Enabling this feature does not send historical estimates. Existing unsaved pending or failed tasks wait for Save after upgrading.
+Saved results show pending, successful, or failed writeback. Unsaved rounds retain manual **Save** and restart controls. After saving, the server retries failed requests up to three total attempts, including after a restart. A facilitator can use **重试回写** after fixing account permissions or connection details. The local estimate remains available when Jira is unreachable. Reopening a voting round discards its previous task; changing the destination or disabling writeback cancels affected tasks. Enabling this feature does not send historical estimates. Previously revealed but unsaved rounds still require manual Save.
 
 Jira connection choices are private to their owner. The game exposes only the issue key, points, and sync status to participants; credentials stay on the server. The existing subscription requirement for Jira integration applies when subscriptions are enabled.
 

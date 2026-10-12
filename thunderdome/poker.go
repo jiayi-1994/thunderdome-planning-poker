@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-const PokerVotingDuration = 2 * time.Minute
+const PokerVotingDuration = 5 * time.Minute
 
 // PokerVotingExpiration identifies a specific voting round, so delayed events cannot end a newer round.
 type PokerVotingExpiration struct {

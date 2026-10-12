@@ -10,7 +10,12 @@ import (
 // EndExpiredStoryVoting closes expired rounds even when no clients remain connected.
 // The database locks the exact rounds being expired and updates stories and games atomically.
 func (d *Service) EndExpiredStoryVoting(ctx context.Context) ([]*thunderdome.PokerVotingExpiration, error) {
-	rows, err := d.DB.QueryContext(ctx, `WITH expired AS MATERIALIZED (
+	tx, err := d.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	rows, err := tx.QueryContext(ctx, `WITH expired AS MATERIALIZED (
 		SELECT p.id AS poker_id, s.id AS story_id, s.votestart_time,
 		       s.votestart_time + (s.voting_duration_seconds * interval '1 second') AS deadline
 		FROM thunderdome.poker_story s
@@ -43,6 +48,14 @@ func (d *Service) EndExpiredStoryVoting(ctx context.Context) ([]*thunderdome.Pok
 	err = rows.Err()
 	rows.Close()
 	if err != nil {
+		return nil, err
+	}
+	for _, event := range expirations {
+		if err := autoSaveStory(ctx, tx, event.PokerID, event.StoryID, true); err != nil {
+			return nil, fmt.Errorf("autosave expired poker voting: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	return expirations, nil

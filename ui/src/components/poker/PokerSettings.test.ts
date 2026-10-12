@@ -77,7 +77,7 @@ describe('Poker countdown and card settings', () => {
     );
   });
 
-  it('defaults to two minutes and blocks blank, fractional, or out-of-range durations', async () => {
+  it('defaults to five minutes and blocks blank, fractional, or out-of-range durations', async () => {
     const handleBattleEdit = vi.fn();
     render(EditPokerGame, {
       battleName: 'Release planning',
@@ -88,7 +88,7 @@ describe('Poker countdown and card settings', () => {
       xfetch: async () => response([]),
     });
     const minutes = page.getByRole('spinbutton', { name: '每轮倒计时（分钟）' });
-    await expect.element(minutes).toHaveValue(2);
+    await expect.element(minutes).toHaveValue(5);
     for (const invalid of ['', '0', '61', '1.5']) {
       await minutes.fill(invalid);
       await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -153,7 +153,7 @@ describe('Poker countdown and card settings', () => {
     expect(notifications.danger).not.toHaveBeenCalled();
     if (meta.jiraWritebackEnabled) {
       expect(notifications.success).toHaveBeenCalledWith(
-        'Jira Story Points writeback is enabled. Points are written only after you click Save.',
+        'Jira Story Points writeback is enabled after automatic or manual save. Timed-out rounds need at least half of eligible players to vote for automatic save.',
       );
     } else if (meta.jiraWritebackWarning) {
       expect(notifications.warning).toHaveBeenCalledWith(meta.jiraWritebackWarning);

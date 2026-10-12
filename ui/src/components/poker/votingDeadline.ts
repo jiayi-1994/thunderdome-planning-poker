@@ -1,6 +1,6 @@
 import type { PokerStory, PokerVotingExpiration } from '../../types/poker';
 
-export const votingDurationMs = 2 * 60 * 1000;
+export const votingDurationMs = 5 * 60 * 1000;
 
 export function remainingVotingSeconds(startTime: Date, deadline: Date | undefined, now: number): number {
   const end = deadline ? new Date(deadline).getTime() : new Date(startTime).getTime() + votingDurationMs;

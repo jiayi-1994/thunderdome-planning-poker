@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/StevenWeathers/thunderdome-planning-poker/thunderdome"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -70,6 +69,26 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		}
 		exec(strings.Split(string(migration), "-- +goose Down")[0])
 	}
+	// Keep an old active round and a custom duration to check the default upgrade.
+	exec(`INSERT INTO thunderdome.poker(id, voting_duration_seconds) VALUES
+		('00000000-0000-0000-0000-000000000092', 120),
+		('00000000-0000-0000-0000-000000000093', 180);
+		INSERT INTO thunderdome.poker_story(id, poker_id, active) VALUES
+		('00000000-0000-0000-0000-000000000094', '00000000-0000-0000-0000-000000000092', true);`)
+	fiveMinuteMigration, err := os.ReadFile("../migrations/20261012090000_default_poker_voting_five_minutes.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec(strings.Split(string(fiveMinuteMigration), "-- +goose Down")[0])
+	var upgradedDefault, preservedCustom, preservedActive bool
+	if err := db.QueryRow(`SELECT
+		(SELECT voting_duration_seconds = 300 FROM thunderdome.poker WHERE id = '00000000-0000-0000-0000-000000000092'),
+		(SELECT voting_duration_seconds = 180 FROM thunderdome.poker WHERE id = '00000000-0000-0000-0000-000000000093'),
+		(SELECT voting_duration_seconds = 120 FROM thunderdome.poker_story WHERE id = '00000000-0000-0000-0000-000000000094')`).Scan(&upgradedDefault, &preservedCustom, &preservedActive); err != nil || !upgradedDefault || !preservedCustom || !preservedActive {
+		t.Fatalf("default upgrade changed a custom duration or active round: %t %t %t %v", upgradedDefault, preservedCustom, preservedActive, err)
+	}
+	exec(`DELETE FROM thunderdome.poker_story WHERE id = '00000000-0000-0000-0000-000000000094';
+		DELETE FROM thunderdome.poker WHERE id IN ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000093');`)
 	var migrationPreservedHistory bool
 	if err := db.QueryRow(`SELECT p.point_values_allowed = ARRAY['1','8'] AND s.points = '13'
 		AND s.votes->0->>'vote' = '13' AND s.voting_duration_seconds = 120
@@ -130,7 +149,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		t.Fatal("live average leaked before reveal")
 	}
 	if restored.VoteDeadline.Sub(restored.VoteStartTime) != thunderdome.PokerVotingDuration {
-		t.Fatal("voting must default to a two-minute deadline")
+		t.Fatal("voting must default to a five-minute deadline")
 	}
 	for _, ballot := range restored.Votes {
 		if ballot.UserID != one && ballot.VoteValue != "" {
@@ -176,12 +195,11 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	if _, err := svc.RetractVote(game, one, story, "testing"); err == nil {
 		t.Fatal("retracted vote after reveal")
 	}
-	finalized, err := svc.FinalizeStory(game, story, "999")
-	if err != nil {
-		t.Fatal(err)
+	if revealed[0].Points != "12.83" {
+		t.Fatal("completion did not automatically save category averages")
 	}
-	if finalized[0].Points != "12.83" {
-		t.Fatal("trusted client total instead of calculating category averages")
+	if _, err := svc.FinalizeStory(game, story, "999"); err == nil {
+		t.Fatal("duplicate Save changed an automatically saved result")
 	}
 	exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, two)
 	reloaded := (&Service{DB: db, Logger: svc.Logger}).GetStories(game, one)[0]
@@ -205,10 +223,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 	vote(one, "testing", "0")
-	if _, err := svc.EndStoryVoting(game, story); err != nil {
-		t.Fatal(err)
-	}
-	if plans, err := svc.FinalizeStory(game, story, "999"); err != nil || plans[0].Points != "0" {
+	if plans, err := svc.EndStoryVoting(game, story); err != nil || plans[0].Points != "0" {
 		t.Fatal("a numeric zero is valid while unscored categories are excluded", err)
 	}
 
@@ -218,7 +233,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		}
 		vote(one, "testing", "5")
 		// Simulate a round that started before this service instance was created.
-		exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '121 seconds' WHERE id = $1`, story)
+		exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '301 seconds' WHERE id = $1`, story)
 		if _, _, err := svc.SetVote(game, three, story, "5", "testing"); err == nil {
 			t.Fatal("accepted a late ballot before the expiration worker ran")
 		}
@@ -234,7 +249,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		if plans[0].Active || plans[0].Estimation.Total != "5" || plans[0].Estimation.Categories[0].Count != 1 {
 			t.Fatalf("nonvoters changed the result: %+v", plans[0])
 		}
-		if plans[0].VoteEndTime.Sub(plans[0].VoteStartTime) != 2*time.Minute {
+		if plans[0].VoteEndTime.Sub(plans[0].VoteStartTime) != thunderdome.PokerVotingDuration {
 			t.Fatal("expiration end time must match the deadline")
 		}
 		var locked bool
@@ -244,8 +259,8 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		if repeated, err := freshService.EndExpiredStoryVoting(context.Background()); err != nil || len(repeated) != 0 {
 			t.Fatal("expiration must be idempotent", err)
 		}
-		if finalized, err := freshService.FinalizeStory(game, story, "999"); err != nil || finalized[0].Points != "5" {
-			t.Fatal("could not save partial participation result", err)
+		if plans[0].Points != "5" {
+			t.Fatal("exactly half of eligible participants should autosave")
 		}
 		if _, err := svc.ActivateStoryVoting(game, story); err != nil {
 			t.Fatal(err)
@@ -253,7 +268,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		if expired, err := svc.EndExpiredStoryVoting(context.Background()); err != nil || len(expired) != 0 {
 			t.Fatal("old deadline stopped restarted round", err)
 		}
-		exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '121 seconds' WHERE id = $1`, story)
+		exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '301 seconds' WHERE id = $1`, story)
 		if expired, err := svc.EndExpiredStoryVoting(context.Background()); err != nil || len(expired) != 1 {
 			t.Fatal("empty round must also end on time", err)
 		}
@@ -275,7 +290,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 				t.Fatal("discussion metadata leaked before reveal")
 			}
 			if expire {
-				exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '121 seconds' WHERE id = $1`, story)
+				exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '301 seconds' WHERE id = $1`, story)
 				if _, err := svc.EndExpiredStoryVoting(context.Background()); err != nil {
 					t.Fatal(err)
 				}
@@ -286,8 +301,8 @@ func TestCategoryVotingDatabase(t *testing.T) {
 			if !revealed.Estimation.Categories[2].NeedsDiscussion || revealed.Estimation.Total != "2.38" {
 				t.Fatalf("missing discussion warning at reveal: %+v", revealed.Estimation)
 			}
-			if _, err := svc.FinalizeStory(game, story, "999"); err != nil {
-				t.Fatal(err)
+			if revealed.Points != "2.38" {
+				t.Fatal("discussion warning must not block automatic saving")
 			}
 			exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, observer)
 			reloaded := (&Service{DB: db, Logger: svc.Logger}).GetStories(game, one)[0]
@@ -299,6 +314,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		}
 	})
 	t.Run("configurable countdown", func(t *testing.T) { testPokerVotingSettings(t, db, svc) })
+	t.Run("automatic saving", func(t *testing.T) { testPokerAutoSave(t, db, svc) })
 	// Verify the migration is reversible after actual data has been saved.
 	t.Run("Jira writeback", func(t *testing.T) { testPokerJiraWriteback(t, db, svc) })
 	t.Run("Jira story import", func(t *testing.T) { testPokerStoryImport(t, db, svc) })

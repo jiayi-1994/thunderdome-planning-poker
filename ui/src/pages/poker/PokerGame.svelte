@@ -244,10 +244,17 @@
             categoryVotes[category.id] = '';
         }
         break;
-      case 'voting_ended':
-        pokerGame.plans = JSON.parse(parsedEvent.value);
-        pokerGame.votingLocked = true;
+      case 'voting_ended': {
+        const plans: PokerStory[] = JSON.parse(parsedEvent.value);
+        const activePlan = pokerGame.plans.find(plan => plan.id === pokerGame.activePlanId);
+        const ended = plans.find(plan => plan.id === pokerGame.activePlanId);
+        if (ended && !ended.active && expirationMatchesRound(activePlan, { planId: ended.id, voteStartTime: ended.voteStartTime })) {
+          pokerGame.plans = plans;
+          pokerGame.votingLocked = true;
+          clearAutoSavedRound();
+        }
         break;
+      }
       case 'voting_expired': {
         const expiration: PokerVotingExpiration = JSON.parse(parsedEvent.value);
         const activePlan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
@@ -255,6 +262,7 @@
           pokerGame.plans = expiration.plans;
           pokerGame.votingLocked = true;
           voteDeadlineReached = true;
+          clearAutoSavedRound();
         }
         break;
       }
@@ -437,6 +445,15 @@
     const voted = story?.votes.find((w) => w.warriorId === warriorId && !w.category);
 
     return voted !== undefined ? voted.vote : '';
+  }
+
+  function clearAutoSavedRound() {
+    const ended = pokerGame.plans.find(plan => plan.id === pokerGame.activePlanId);
+    if (ended && !ended.active && ended.points !== '') {
+      pokerGame.activePlanId = '';
+      currentStory = { ...defaultStory };
+      categoryVotes = emptyCategoryVotes();
+    }
   }
 
   // get highest vote from active story
@@ -632,6 +649,11 @@
 
   <div class="flex flex-wrap mb-4 -mx-4">
     <div class="w-full lg:w-3/4 px-4">
+      {#if showVotingResults && voteDeadlineReached && !activeStory?.points}
+        <p class="mb-4 rounded-lg bg-amber-50 p-4 text-amber-900 dark:bg-amber-950 dark:text-amber-100" role="status">
+          本轮已超时，评分人数不足一半或没有有效评分，未自动保存。可确认结果后手动保存，或重新评点。
+        </p>
+      {/if}
       {#if !gameOver}
         {#if legacyResults}
           <div class=" mb-2 md:mb-4">
@@ -726,7 +748,7 @@
       <div class="bg-white dark:bg-gray-800 shadow-lg mb-4 rounded-lg">
         <div class="bg-blue-500 dark:bg-gray-700 p-4 rounded-t-lg">
           <h3 class="text-3xl text-white leading-tight font-semibold font-rajdhani uppercase">
-            {$LL.warriors()}
+            {$LL.warriors()} ({pokerGame.users.filter(war => war.active).length})
           </h3>
         </div>
 
@@ -825,7 +847,7 @@
       {points}
       votingLocked={pokerGame.votingLocked}
       autoFinishVoting={pokerGame.autoFinishVoting}
-      votingDurationSeconds={pokerGame.votingDurationSeconds ?? 120}
+      votingDurationSeconds={pokerGame.votingDurationSeconds ?? 300}
       pointAverageRounding={pokerGame.pointAverageRounding}
       hideVoterIdentity={pokerGame.hideVoterIdentity}
       handleBattleEdit={handleGameEdit}

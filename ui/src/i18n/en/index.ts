@@ -872,7 +872,8 @@ const en = {
   themeAuto: 'System',
   selectPointsError: 'Must select an estimation scale and allowed point values.',
   getEstimationScalesError: 'Failed to get estimation scales',
-  jiraWritebackAutoEnabled: 'Jira Story Points writeback is enabled. Points are written only after you click Save.',
+  jiraWritebackAutoEnabled:
+    'Jira Story Points writeback is enabled after automatic or manual save. Timed-out rounds need at least half of eligible players to vote for automatic save.',
   jiraImportUI: {
     subscriptionPitch: 'Import your stories for Poker Planning from Jira.',
     subscriptionExpired: 'Your subscription has expired.',
@@ -883,7 +884,8 @@ const en = {
     searchMode: 'Search mode',
     basicFilters: 'Basic filters',
     advancedJQL: 'Advanced JQL',
-    advancedHint: 'Write a JQL query here. Basic filters are kept separately; switching back restores your filter selections.',
+    advancedHint:
+      'Write a JQL query here. Basic filters are kept separately; switching back restores your filter selections.',
     queryPreview: 'Query preview',
     issueType: 'Issue type',
     allIssueTypes: 'All issue types',

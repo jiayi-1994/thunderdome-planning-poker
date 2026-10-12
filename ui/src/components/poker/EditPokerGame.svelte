@@ -41,7 +41,7 @@
     battleName = $bindable(''),
     votingLocked = false,
     autoFinishVoting = $bindable(true),
-    votingDurationSeconds = 120,
+    votingDurationSeconds = 300,
     pointAverageRounding = $bindable('ceil'),
     joinCode = $bindable(''),
     leaderCode = $bindable(''),

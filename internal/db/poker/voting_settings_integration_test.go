@@ -16,7 +16,7 @@ func testPokerVotingSettings(t *testing.T, database *sql.DB, svc *Service) {
 		return svc.UpdateGame(game, "Configured countdown", deck, false, "ceil", false, "", "", "", seconds)
 	}
 	defer func() {
-		seconds := 120
+		seconds := 300
 		if err := save(&seconds); err != nil {
 			t.Error(err)
 		}
@@ -87,7 +87,7 @@ func testPokerVotingSettings(t *testing.T, database *sql.DB, svc *Service) {
 		t.Fatal("round did not end at its configured deadline")
 	}
 	// Restore the default for the remaining Jira regression scenarios.
-	seconds = 120
+	seconds = 300
 	if err := save(&seconds); err != nil {
 		t.Fatal(err)
 	}

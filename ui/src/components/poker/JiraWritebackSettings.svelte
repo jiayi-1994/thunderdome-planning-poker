@@ -119,7 +119,7 @@
     <div>
       <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Jira 点数回写</h2>
       <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        评点结束后，点击评点结果下方的 {$LL.save()}，才将测试、前端、后端的平均分之和写入 Jira。
+        评点结束后自动保存，并将测试、前端、后端的平均分之和写入 Jira。超时且评分人数不足一半时，需手动保存。
       </p>
     </div>
     {#if loading}
@@ -127,7 +127,7 @@
     {:else}
       <label class="flex items-center gap-3 font-semibold text-gray-800 dark:text-gray-100">
         <input type="checkbox" bind:checked={settings.enabled} disabled={saving} class="w-4 h-4 accent-blue-600" />
-        点击 {$LL.save()} 保存评点后回写
+        保存评点后回写（含自动保存）
       </label>
       {#if instances.length === 0}
         <p class="text-sm text-gray-600 dark:text-gray-300">
@@ -187,7 +187,8 @@
         </div>
         <p class="text-sm text-gray-600 dark:text-gray-300">
           需求须填写与此实例匹配的 Jira
-          编号和链接。倒计时结束、手动结束和自动结束均不会直接回写；设置适用于之后点击 {$LL.save()} 保存的评点。
+          编号和链接。手动结束或全部评分后自动结束会自动保存；超时结束时，至少一半在线非旁观者提交评分才自动保存。
+          未自动保存的结果可点击 {$LL.save()} 确认后回写。
           没有有效评分时不回写，失败不会影响本地评点结果。
         </p>
       {/if}
