@@ -21,6 +21,17 @@ export type Translation = RootTranslation
 export type Translations = RootTranslation
 
 type RootTranslation = {
+	pokerVotingUI: {
+		/**
+		 * N​o​t​ ​v​o​t​e​d​:​ ​{​c​o​u​n​t​}
+		 * @param {unknown} count
+		 */
+		unvotedCount: RequiredParams<'count'>
+		/**
+		 * P​o​i​n​t​s​ ​s​a​v​e​d​.​ ​R​e​s​u​l​t​s​ ​s​t​a​y​ ​v​i​s​i​b​l​e​ ​u​n​t​i​l​ ​t​h​e​ ​n​e​x​t​ ​s​t​o​r​y​ ​i​s​ ​a​c​t​i​v​a​t​e​d​.
+		 */
+		savedResult: string
+	}
 	voteReminderUI: {
 		/**
 		 * L​e​s​s​ ​t​h​a​n​ ​3​0​ ​s​e​c​o​n​d​s​ ​l​e​f​t​.​ ​P​l​e​a​s​e​ ​s​u​b​m​i​t​ ​y​o​u​r​ ​e​s​t​i​m​a​t​e​.
@@ -3419,7 +3430,7 @@ type RootTranslation = {
 	 */
 	getEstimationScalesError: string
 	/**
-	 * J​i​r​a​ ​S​t​o​r​y​ ​P​o​i​n​t​s​ ​w​r​i​t​e​b​a​c​k​ ​i​s​ ​e​n​a​b​l​e​d​.​ ​P​o​i​n​t​s​ ​a​r​e​ ​w​r​i​t​t​e​n​ ​o​n​l​y​ ​a​f​t​e​r​ ​y​o​u​ ​c​l​i​c​k​ ​S​a​v​e​.
+	 * J​i​r​a​ ​S​t​o​r​y​ ​P​o​i​n​t​s​ ​w​r​i​t​e​b​a​c​k​ ​i​s​ ​e​n​a​b​l​e​d​ ​a​f​t​e​r​ ​a​u​t​o​m​a​t​i​c​ ​o​r​ ​m​a​n​u​a​l​ ​s​a​v​e​.​ ​T​i​m​e​d​-​o​u​t​ ​r​o​u​n​d​s​ ​n​e​e​d​ ​a​t​ ​l​e​a​s​t​ ​h​a​l​f​ ​o​f​ ​e​l​i​g​i​b​l​e​ ​p​l​a​y​e​r​s​ ​t​o​ ​v​o​t​e​ ​f​o​r​ ​a​u​t​o​m​a​t​i​c​ ​s​a​v​e​.
 	 */
 	jiraWritebackAutoEnabled: string
 	jiraImportUI: {
@@ -3647,6 +3658,16 @@ type RootTranslation = {
 }
 
 export type TranslationFunctions = {
+	pokerVotingUI: {
+		/**
+		 * Not voted: {count}
+		 */
+		unvotedCount: (arg: { count: unknown }) => LocalizedString
+		/**
+		 * Points saved. Results stay visible until the next story is activated.
+		 */
+		savedResult: () => LocalizedString
+	}
 	voteReminderUI: {
 		/**
 		 * Less than 30 seconds left. Please submit your estimate.
@@ -6998,7 +7019,7 @@ export type TranslationFunctions = {
 	 */
 	getEstimationScalesError: () => LocalizedString
 	/**
-	 * Jira Story Points writeback is enabled. Points are written only after you click Save.
+	 * Jira Story Points writeback is enabled after automatic or manual save. Timed-out rounds need at least half of eligible players to vote for automatic save.
 	 */
 	jiraWritebackAutoEnabled: () => LocalizedString
 	jiraImportUI: {

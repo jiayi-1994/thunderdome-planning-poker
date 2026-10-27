@@ -226,14 +226,17 @@ describe('PokerGame voting reminder eligibility', () => {
   });
 
   it.each(['voting_ended', 'voting_expired'])(
-    'clears voting controls when %s includes an automatically saved result',
+    'keeps saved results visible after %s until another story is activated',
     async type => {
       const state = game();
       state.leaders = ['self'];
+      state.plans.push({ ...state.plans[0], id: 'next', name: 'Next story', active: false, votes: [] });
       await openGame(state);
       state.plans[0].active = false;
       state.plans[0].points = '0';
+      state.plans[0].voteEndTime = now;
       state.plans[0].votes = [{ warriorId: 'self', category: 'backend', vote: '0' }];
+      state.plans[0].estimation = { total: '0', categories: [{ category: 'backend', average: '0', count: 1 }] };
       await event(
         type,
         type === 'voting_expired'
@@ -244,9 +247,115 @@ describe('PokerGame voting reminder eligibility', () => {
       await expect.element(page.getByTestId('voting-restart')).not.toBeInTheDocument();
       await expect.element(page.getByRole('timer')).not.toBeInTheDocument();
       await expect.element(reminder()).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('currentplan-name')).toHaveTextContent('A story awaiting estimates');
+      await expect.element(page.getByTestId('category-results')).toBeVisible();
+      await expect.element(page.getByTestId('category-total')).toHaveTextContent('0');
+      await expect.element(page.getByTestId('unvoted-participants')).not.toBeInTheDocument();
       expect(socket.send.mock.calls.some(([raw]) => JSON.parse(raw).type === 'finalize_plan')).toBe(false);
+
+      // A reconnect returns no activePlanId after the server saves the round.
+      state.activePlanId = '';
+      state.votingLocked = true;
+      await event('init', state);
+      await expect.element(page.getByTestId('category-total')).toHaveTextContent('0');
+      await expect.element(page.getByTestId('voting-save')).not.toBeInTheDocument();
+
+      await page.getByTestId('plan').filter({ hasText: 'Next story' }).getByTestId('plan-activate').click();
+      expect(JSON.parse(socket.send.mock.calls.at(-1)![0])).toEqual({ type: 'activate_plan', value: 'next' });
+      await expect.element(page.getByTestId('category-results')).toBeVisible();
+      state.plans[1] = {
+        ...state.plans[1],
+        active: true,
+        voteStartTime: now,
+        voteDeadline: new Date(now.getTime() + 300000),
+      };
+      await event('plan_activated', state.plans);
+      await expect.element(page.getByTestId('category-results')).not.toBeInTheDocument();
+      await expect.element(page.getByTestId('currentplan-name')).toHaveTextContent('Next story');
+      await expect.element(page.getByRole('timer')).toHaveTextContent('05:00');
+      await expect.element(page.getByTestId('unvoted-participants')).toHaveTextContent('Not voted: 2');
     },
   );
+
+  it('restores the most recent saved round on a fresh load regardless of story order', async () => {
+    const state = game();
+    state.activePlanId = '';
+    state.votingLocked = true;
+    state.plans[0] = {
+      ...state.plans[0],
+      active: false,
+      points: '5',
+      voteEndTime: now,
+      votes: [{ warriorId: 'self', vote: '5' }],
+    };
+    state.plans.push({
+      ...state.plans[0],
+      id: 'older',
+      name: 'Older story',
+      voteStartTime: new Date(now.getTime() - 300000),
+    });
+    await openGame(state);
+    await expect.element(page.getByTestId('currentplan-name')).toHaveTextContent('A story awaiting estimates');
+    await expect.element(page.getByTestId('voteresult-graph')).toBeVisible();
+    await expect.element(page.getByRole('timer')).not.toBeInTheDocument();
+  });
+
+  it('does not restore an older result when the latest round was skipped', async () => {
+    const state = game();
+    state.activePlanId = '';
+    state.votingLocked = true;
+    state.plans[0] = { ...state.plans[0], active: false, points: '5', voteEndTime: now };
+    state.plans.push({ ...state.plans[0], id: 'skipped', points: '', skipped: true, voteStartTime: now });
+    await openGame(state);
+    await expect.element(page.getByTestId('category-results')).not.toBeInTheDocument();
+    await expect.element(page.getByTestId('unvoted-participants')).not.toBeInTheDocument();
+  });
+
+  it('shows up to three unvoted names and the total, excluding spectators and inactive users', async () => {
+    const state = game();
+    state.users = ['self', 'Alice', 'Bob', 'Carol', 'Dave'].map(id => ({ ...participant(id), name: id }));
+    state.users.push({ ...participant('spectator'), spectator: true }, { ...participant('offline'), active: false });
+    state.plans[0].votes = [{ warriorId: 'self', category: 'backend', vote: '0' }];
+    await openGame(state);
+    const summary = page.getByTestId('unvoted-participants');
+    const names = page.getByTestId('unvoted-names');
+    await expect.element(summary).toHaveTextContent('Not voted: 4');
+    await expect.element(names).toHaveTextContent(/Alice、\s*Bob、\s*Carol…/);
+    await expect.element(names).not.toHaveTextContent('Dave');
+
+    // Even a masked ballot counts as submitted; multiple categories still count as one person.
+    state.plans[0].votes.push(
+      { warriorId: 'Alice', category: 'backend', vote: '' },
+      { warriorId: 'Alice', category: 'frontend', vote: '' },
+    );
+    await event('vote_activity', state.plans, 'Alice');
+    await expect.element(summary).toHaveTextContent('Not voted: 3');
+    await expect.element(names).toHaveTextContent(/Bob、\s*Carol、\s*Dave/);
+
+    state.plans[0].votes = state.plans[0].votes.filter(vote => vote.warriorId !== 'Alice');
+    await event('vote_retracted', state.plans, 'Alice');
+    await expect.element(summary).toHaveTextContent('Not voted: 4');
+    await expect.element(names).toHaveTextContent(/Alice、\s*Bob、\s*Carol…/);
+
+    state.users.find(person => person.id === 'Alice')!.spectator = true;
+    await event('users_updated', state.users);
+    await expect.element(summary).toHaveTextContent('Not voted: 3');
+    state.users.find(person => person.id === 'Bob')!.active = false;
+    await event('user_left', state.users, 'Bob');
+    await expect.element(summary).toHaveTextContent('Not voted: 2');
+    await expect.element(names).toHaveTextContent(/Carol、\s*Dave/);
+    state.users.find(person => person.id === 'Bob')!.active = true;
+    await event('user_joined', state.users, 'Bob');
+    await expect.element(summary).toHaveTextContent('Not voted: 3');
+
+    state.plans[0].votes.push(...['Bob', 'Carol', 'Dave'].map(warriorId => ({ warriorId, vote: '' })));
+    await event('vote_activity', state.plans);
+    await expect.element(summary).toHaveTextContent('Not voted: 0');
+    await expect.element(names).not.toBeInTheDocument();
+
+    await event('game_ended', { endTime: now.toISOString(), endReason: 'Finished' });
+    await expect.element(summary).not.toBeInTheDocument();
+  });
 
   it('keeps manual Save and Restart when a timed-out round was not automatically saved', async () => {
     const state = game();

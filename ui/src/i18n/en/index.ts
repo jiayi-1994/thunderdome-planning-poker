@@ -1,6 +1,10 @@
 import type { BaseTranslation } from '../i18n-types';
 
 const en = {
+  pokerVotingUI: {
+    unvotedCount: 'Not voted: {count}' as const,
+    savedResult: 'Points saved. Results stay visible until the next story is activated.',
+  },
   voteReminderUI: {
     warning: 'Less than 30 seconds left. Please submit your estimate.',
     title: 'Please submit your estimate',

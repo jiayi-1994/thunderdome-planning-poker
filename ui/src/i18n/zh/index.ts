@@ -1,6 +1,10 @@
 import type { Translation } from '../i18n-types';
 
 const zh: Translation = {
+  pokerVotingUI: {
+    unvotedCount: '未评点 {count} 人',
+    savedResult: '分数已保存，激活下一条 Story 后切换到新一轮评点。',
+  },
   voteReminderUI: {
     warning: '剩余不足 30 秒，请完成本轮评点。',
     title: '请完成评点',

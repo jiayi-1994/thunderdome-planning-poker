@@ -129,6 +129,27 @@
         currentStory = { ...defaultStory };
         categoryVotes = emptyCategoryVotes();
         voteDeadlineReached = false;
+        if (!pokerGame.activePlanId) {
+          // Auto-save clears the server's active ID. Keep the latest completed round on screen,
+          // including after reconnecting, until another story is activated.
+          const latestRound = pokerGame.plans.reduce<PokerStory | undefined>(
+            (latest, plan) =>
+              new Date(plan.voteStartTime).getTime() > new Date(latest?.voteStartTime ?? 0).getTime()
+                ? plan
+                : latest,
+            undefined,
+          );
+          if (
+            latestRound &&
+            !latestRound.active &&
+            !latestRound.skipped &&
+            latestRound.points !== '' &&
+            new Date(latestRound.voteEndTime).getTime() >= new Date(latestRound.voteStartTime).getTime()
+          ) {
+            pokerGame.activePlanId = latestRound.id;
+            pokerGame.votingLocked = true;
+          }
+        }
         if (pokerGame.activePlanId) {
           const activePlan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
           if (activePlan) {
@@ -251,7 +272,7 @@
         if (ended && !ended.active && expirationMatchesRound(activePlan, { planId: ended.id, voteStartTime: ended.voteStartTime })) {
           pokerGame.plans = plans;
           pokerGame.votingLocked = true;
-          clearAutoSavedRound();
+          currentStory = ended;
         }
         break;
       }
@@ -262,7 +283,7 @@
           pokerGame.plans = expiration.plans;
           pokerGame.votingLocked = true;
           voteDeadlineReached = true;
-          clearAutoSavedRound();
+          currentStory = pokerGame.plans.find(plan => plan.id === pokerGame.activePlanId) || { ...defaultStory };
         }
         break;
       }
@@ -447,15 +468,6 @@
     return voted !== undefined ? voted.vote : '';
   }
 
-  function clearAutoSavedRound() {
-    const ended = pokerGame.plans.find(plan => plan.id === pokerGame.activePlanId);
-    if (ended && !ended.active && ended.points !== '') {
-      pokerGame.activePlanId = '';
-      currentStory = { ...defaultStory };
-      categoryVotes = emptyCategoryVotes();
-    }
-  }
-
   // get highest vote from active story
   function getHighestVote() {
     const voteCounts: Record<string, number> = {};
@@ -500,6 +512,12 @@
   );
   let showVotingResults = $derived(pokerGame.activePlanId !== '' && pokerGame.votingLocked === true);
   let activeStory = $derived(pokerGame.plans.find((p) => p.id === pokerGame.activePlanId));
+  let roundSaved = $derived(Boolean(activeStory && !activeStory.active && activeStory.points !== ''));
+  let unvotedParticipants = $derived(
+    pokerGame.users.filter(
+      person => person.active && !person.spectator && !activeStory?.votes.some(vote => vote.warriorId === person.id),
+    ),
+  );
   let votingDisabled = $derived(
     !activeStory?.active ||
       pokerGame.votingLocked ||
@@ -649,6 +667,11 @@
 
   <div class="flex flex-wrap mb-4 -mx-4">
     <div class="w-full lg:w-3/4 px-4">
+      {#if showVotingResults && roundSaved && !gameOver}
+        <p class="mb-4 rounded-lg bg-green-50 p-4 text-green-900 dark:bg-green-950 dark:text-green-100" role="status">
+          {$LL.pokerVotingUI.savedResult()}
+        </p>
+      {/if}
       {#if showVotingResults && voteDeadlineReached && !activeStory?.points}
         <p class="mb-4 rounded-lg bg-amber-50 p-4 text-amber-900 dark:bg-amber-950 dark:text-amber-100" role="status">
           本轮已超时，评分人数不足一半或没有有效评分，未自动保存。可确认结果后手动保存，或重新评点。
@@ -746,10 +769,34 @@
 
     <div class="w-full lg:w-1/4 px-4">
       <div class="bg-white dark:bg-gray-800 shadow-lg mb-4 rounded-lg">
-        <div class="bg-blue-500 dark:bg-gray-700 p-4 rounded-t-lg">
-          <h3 class="text-3xl text-white leading-tight font-semibold font-rajdhani uppercase">
-            {$LL.warriors()} ({pokerGame.users.filter(war => war.active).length})
-          </h3>
+        <div class="bg-blue-500 dark:bg-gray-700 p-4 rounded-t-lg text-white">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-3xl leading-tight font-semibold font-rajdhani uppercase">
+              {$LL.warriors()} ({pokerGame.users.filter(war => war.active).length})
+            </h3>
+            {#if activeStory?.active && !pokerGame.votingLocked && !gameOver}
+              <div
+                class="min-w-0 flex-1 rounded bg-blue-800 px-2 py-1 text-sm dark:bg-gray-900"
+                data-testid="unvoted-participants"
+                role="status"
+              >
+                <span class="font-semibold">
+                  {$LL.pokerVotingUI.unvotedCount({ count: unvotedParticipants.length })}
+                </span>
+                {#if unvotedParticipants.length}
+                  <p class="mt-1 break-words" data-testid="unvoted-names">
+                    {#each unvotedParticipants.slice(0, 3) as person, index (person.id)}
+                      <span class="inline-block max-w-full align-top">
+                        {person.name}{index < Math.min(unvotedParticipants.length, 3) - 1
+                          ? '、'
+                          : unvotedParticipants.length > 3 ? '…' : ''}
+                      </span>
+                    {/each}
+                  </p>
+                {/if}
+              </div>
+            {/if}
+          </div>
         </div>
 
         {#each pokerGame.users as war (war.id)}
@@ -768,7 +815,7 @@
           {/if}
         {/each}
 
-        {#if isFacilitator && !gameOver}
+        {#if isFacilitator && !gameOver && !roundSaved}
           <VotingControls
             {points}
             planId={pokerGame.activePlanId}
