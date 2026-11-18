@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/StevenWeathers/thunderdome-planning-poker/thunderdome"
 	"github.com/gorilla/securecookie"
 )
 
 // New creates a new CookieService
 func New(config Config) *CookieService {
-	c := CookieService{
-		config: config,
+	hashKey := []byte(config.CookieHashKey)
+	return &CookieService{
+		config:    config,
+		sc:        securecookie.New(hashKey, nil),
+		sessionSC: securecookie.New(hashKey, nil).MaxAge(thunderdome.SessionMaxAgeSeconds),
 	}
-
-	c.sc = securecookie.New([]byte(c.config.CookieHashKey), nil)
-
-	return &c
 }
 
 // CreateCookie creates a secure cookie with given cookieName
@@ -68,7 +68,11 @@ func (s *CookieService) GetCookie(w http.ResponseWriter, r *http.Request, cookie
 	var value string
 
 	if cookie, err := r.Cookie(cookieName); err == nil {
-		if err = s.sc.Decode(cookieName, cookie.Value, &value); err != nil {
+		codec := s.sc
+		if cookieName == s.config.SessionCookieName {
+			codec = s.sessionSC
+		}
+		if err = codec.Decode(cookieName, cookie.Value, &value); err != nil {
 			s.DeleteCookie(w, cookieName)
 			return "", fmt.Errorf("INVALID_COOKIE")
 		}

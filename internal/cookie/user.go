@@ -42,7 +42,7 @@ func (s *CookieService) CreateUserCookie(w http.ResponseWriter, userID string) e
 
 // CreateSessionCookie creates the user's session CookieService
 func (s *CookieService) CreateSessionCookie(w http.ResponseWriter, sessionID string) error {
-	return s.CreateCookie(w, s.config.SessionCookieName, sessionID, int(time.Hour.Seconds()*24*30))
+	return s.CreateCookie(w, s.config.SessionCookieName, sessionID, thunderdome.SessionMaxAgeSeconds)
 }
 
 // CreateUserUICookie creates the user's frontend UI cookie

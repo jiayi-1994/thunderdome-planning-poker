@@ -14,7 +14,6 @@ concurrency:
 
 jobs:
   publish:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -46,8 +45,8 @@ jobs:
         with:
           images: ${{ steps.image.outputs.name }}
           tags: |
-            type=raw,value=latest
-            type=raw,value=main
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,format=long
 
       - name: Build and publish both architectures
@@ -76,7 +75,6 @@ jobs:
           test "$version" = "thunderdome version $REVISION"
           {
             echo '## Published image'
-            echo "Image: \`$IMAGE:latest\`"
             echo "Commit tag: \`$IMAGE:sha-$REVISION\`"
             echo "Digest: \`$DIGEST\`"
             echo 'Platforms: linux/amd64, linux/arm64'

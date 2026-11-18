@@ -4,6 +4,9 @@ import (
 	"time"
 )
 
+// SessionMaxAgeSeconds is the lifetime of a completed login session.
+const SessionMaxAgeSeconds = 365 * 24 * 60 * 60
+
 type AuthProviderConfig struct {
 	ProviderName           string   `mapstructure:"provider_name"`
 	ProviderURL            string   `mapstructure:"provider_url"`
