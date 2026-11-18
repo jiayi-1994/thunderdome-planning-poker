@@ -14,6 +14,7 @@ import (
 const (
 	contextKeyUserID          contextKey = "userId"
 	contextKeyUserType        contextKey = "userType"
+	contextKeySessionID       contextKey = "sessionId"
 	apiKeyHeaderName          string     = "X-API-Key"
 	contextKeyUserTeamRoles   contextKey = "userTeamRoles"
 	contextKeyOrgRole         contextKey = "orgRole"

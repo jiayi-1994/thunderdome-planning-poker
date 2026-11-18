@@ -716,6 +716,7 @@
   }
 
   router.listen();
+  void user.renewSession();
 
   const xfetch: ApiClient = apiclient(handle401);
 

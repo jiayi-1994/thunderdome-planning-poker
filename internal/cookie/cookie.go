@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/StevenWeathers/thunderdome-planning-poker/thunderdome"
 	"github.com/gorilla/securecookie"
 )
+
+// Browsers can cap persistent cookies at 400 days from when they are set.
+const sessionCookieMaxAge = 400 * 24 * 60 * 60
 
 // New creates a new CookieService
 func New(config Config) *CookieService {
@@ -14,7 +16,7 @@ func New(config Config) *CookieService {
 	return &CookieService{
 		config:    config,
 		sc:        securecookie.New(hashKey, nil),
-		sessionSC: securecookie.New(hashKey, nil).MaxAge(thunderdome.SessionMaxAgeSeconds),
+		sessionSC: securecookie.New(hashKey, nil).MaxAge(sessionCookieMaxAge),
 	}
 }
 

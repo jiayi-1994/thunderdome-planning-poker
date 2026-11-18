@@ -96,6 +96,7 @@ func (s *Service) userOnly(h http.HandlerFunc) http.HandlerFunc {
 					s.Failure(w, r, http.StatusUnauthorized, Errorf(EINVALID, "INVALID_USER"))
 					return
 				}
+				ctx = context.WithValue(ctx, contextKeySessionID, sessionID)
 			} else {
 				userID, err := s.Cookie.ValidateUserCookie(w, r)
 				if err != nil {

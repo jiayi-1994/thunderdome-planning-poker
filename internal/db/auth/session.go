@@ -19,12 +19,12 @@ func (d *Service) CreateSession(ctx context.Context, userID string, enabled bool
 	// Pending MFA sessions keep their original seven-day expiration until verification.
 	if _, sessionErr := d.DB.ExecContext(ctx, `
 		INSERT INTO thunderdome.user_session (session_id, user_id, disabled, expire_date)
-		VALUES ($1, $2, $3, NOW() + CASE WHEN $3 THEN INTERVAL '7 days' ELSE $4::integer * INTERVAL '1 second' END);
+		VALUES ($1, $2, $3, NOW() + CASE WHEN $3 THEN INTERVAL '7 days' ELSE make_interval(years => $4) END);
 		`,
 		sessionID,
 		userID,
 		!enabled,
-		thunderdome.SessionMaxAgeSeconds,
+		thunderdome.SessionLifetimeYears,
 	); sessionErr != nil {
 		return "", fmt.Errorf("create user session query error: %v", sessionErr)
 	}
@@ -36,11 +36,11 @@ func (d *Service) CreateSession(ctx context.Context, userID string, enabled bool
 func (d *Service) EnableSession(ctx context.Context, sessionID string) error {
 	result, err := d.DB.ExecContext(ctx, `
 		UPDATE thunderdome.user_session
-		SET disabled = false, expire_date = NOW() + $2::integer * INTERVAL '1 second'
+		SET disabled = false, expire_date = NOW() + make_interval(years => $2)
 		WHERE session_id = $1 AND disabled = true AND NOW() < expire_date;
 		`,
 		sessionID,
-		thunderdome.SessionMaxAgeSeconds,
+		thunderdome.SessionLifetimeYears,
 	)
 	if err != nil {
 		return fmt.Errorf("enable user session query error: %w", err)

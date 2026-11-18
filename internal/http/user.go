@@ -45,6 +45,12 @@ func (s *Service) handleSessionUserProfile() http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Cache-Control", "no-store")
+		if sessionID, ok := ctx.Value(contextKeySessionID).(string); ok {
+			if err := s.Cookie.CreateSessionCookie(w, sessionID); err != nil {
+				s.Logger.Ctx(ctx).Error("renew session cookie", zap.Error(err))
+			}
+		}
 		s.Success(w, r, http.StatusOK, user, nil)
 	}
 }

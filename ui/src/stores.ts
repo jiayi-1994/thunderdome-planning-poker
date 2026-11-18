@@ -1,4 +1,4 @@
-import { derived, writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 import Cookies from 'js-cookie';
 import { AppConfig, rtlLanguages } from './config';
 import { locale } from './i18n/i18n-svelte';
@@ -13,29 +13,43 @@ declare global {
 }
 
 function initWarrior() {
-  const { subscribe, set, update } = writable(JSON.parse(Cookies.get(CookieName) || '{}'));
+  const store = writable(JSON.parse(Cookies.get(CookieName) || '{}'));
+
+  function writeWarriorCookie(warrior: SessionUser) {
+    Cookies.set(CookieName, JSON.stringify(warrior), {
+      expires: warrior.rank === 'GUEST' ? 365 : 400,
+      SameSite: 'strict',
+      path: cookiePath,
+    });
+  }
+
+  function saveWarrior(warrior: SessionUser) {
+    writeWarriorCookie(warrior);
+    store.set(warrior);
+  }
 
   return {
-    subscribe,
-    create: (warrior: SessionUser) => {
-      Cookies.set(CookieName, JSON.stringify(warrior), {
-        expires: 365,
-        SameSite: 'strict',
-        path: cookiePath,
-      });
-      set(warrior);
-    },
-    update: (warrior: SessionUser) => {
-      Cookies.set(CookieName, JSON.stringify(warrior), {
-        expires: 365,
-        SameSite: 'strict',
-        path: cookiePath,
-      });
-      update(w => (w = warrior));
+    subscribe: store.subscribe,
+    create: saveWarrior,
+    update: saveWarrior,
+    renewSession: async () => {
+      const { id, rank } = get(store);
+      if (!id || rank === 'GUEST') return;
+
+      try {
+        const response = await fetch(`${PathPrefix}/api/auth/user`, { cache: 'no-store' });
+        if (!response.ok) return;
+
+        const { data } = await response.json();
+        const current = get(store);
+        if (data?.id === id && current.id === id) writeWarriorCookie(current);
+      } catch {
+        // A failed background renewal leaves the current login state available.
+      }
     },
     delete: () => {
       Cookies.remove(CookieName, { path: cookiePath });
-      set({});
+      store.set({});
     },
   };
 }
