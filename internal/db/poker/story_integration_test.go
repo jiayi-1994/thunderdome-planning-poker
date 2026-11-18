@@ -60,7 +60,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	exec(strings.Split(string(deadlineMigration), "-- +goose Down")[0])
 	// Seed a completed game before migration to verify only its selectable deck changes.
 	exec(`INSERT INTO thunderdome.poker(id, end_time, point_values_allowed) VALUES ('00000000-0000-0000-0000-000000000090', now(), ARRAY['1','8','13','?']);
-		INSERT INTO thunderdome.poker_story(id, poker_id, active, points, votes) VALUES ('00000000-0000-0000-0000-000000000091', '00000000-0000-0000-0000-000000000090', false, '13', '[{"warriorId":"old-user","vote":"13","category":"testing"}]');
+		INSERT INTO thunderdome.poker_story(id, poker_id, active, points, votes) VALUES ('00000000-0000-0000-0000-000000000091', '00000000-0000-0000-0000-000000000090', false, '13', '[{"warriorId":"old-user","vote":"13","category":"frontend"}]');
 		INSERT INTO thunderdome.estimation_scale(id, name, scale_type, values) VALUES ('00000000-0000-0000-0000-000000000050', 'Thunderdome Default', 'thunderdome_default', ARRAY['0','1/2','1','2','3','5','8','13','?']);`)
 	for _, name := range []string{"20230930180117_add_jira_tables.sql", "20250219144939_add_jiradatacenter.sql", "20260911120000_add_poker_jira_writeback.sql", "20260912100000_add_jira_auth_method.sql", "20260915090000_configure_poker_voting.sql", "20260915150000_require_save_for_jira_writeback.sql"} {
 		migration, err := os.ReadFile("../migrations/" + name)
@@ -73,13 +73,27 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	exec(`INSERT INTO thunderdome.poker(id, voting_duration_seconds) VALUES
 		('00000000-0000-0000-0000-000000000092', 120),
 		('00000000-0000-0000-0000-000000000093', 180);
-		INSERT INTO thunderdome.poker_story(id, poker_id, active) VALUES
-		('00000000-0000-0000-0000-000000000094', '00000000-0000-0000-0000-000000000092', true);`)
+		INSERT INTO thunderdome.poker_story(id, poker_id, active, votes) VALUES
+		('00000000-0000-0000-0000-000000000094', '00000000-0000-0000-0000-000000000092', true,
+		 '[{"warriorId":"old-user","vote":"2","category":"backend"},
+		   {"warriorId":"tester","vote":"5","category":"testing"},
+		   {"warriorId":"old-user","vote":"0","category":"frontend"}]');`)
 	fiveMinuteMigration, err := os.ReadFile("../migrations/20261012090000_default_poker_voting_five_minutes.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
 	exec(strings.Split(string(fiveMinuteMigration), "-- +goose Down")[0])
+	rolesMigration, err := os.ReadFile("../migrations/20261118140000_merge_development_voting_roles.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	exec(strings.Split(string(rolesMigration), "-- +goose Down")[0])
+	var merged bool
+	if err := db.QueryRow(`SELECT votes = '[{"warriorId":"tester","vote":"5","category":"testing"},
+		{"warriorId":"old-user","vote":"0","category":"development"}]'::jsonb
+		FROM thunderdome.poker_story WHERE id = '00000000-0000-0000-0000-000000000094'`).Scan(&merged); err != nil || !merged {
+		t.Fatalf("the active round should retain only the latest development ballot: %v", err)
+	}
 	var upgradedDefault, preservedCustom, preservedActive bool
 	if err := db.QueryRow(`SELECT
 		(SELECT voting_duration_seconds = 300 FROM thunderdome.poker WHERE id = '00000000-0000-0000-0000-000000000092'),
@@ -91,7 +105,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 		DELETE FROM thunderdome.poker WHERE id IN ('00000000-0000-0000-0000-000000000092', '00000000-0000-0000-0000-000000000093');`)
 	var migrationPreservedHistory bool
 	if err := db.QueryRow(`SELECT p.point_values_allowed = ARRAY['1','8'] AND s.points = '13'
-		AND s.votes->0->>'vote' = '13' AND s.voting_duration_seconds = 120
+		AND s.votes->0->>'vote' = '13' AND s.votes->0->>'category' = 'frontend' AND s.voting_duration_seconds = 120
 		AND (SELECT values = ARRAY['0','1/2','1','2','3','5','8'] FROM thunderdome.estimation_scale WHERE id = p.estimation_scale_id)
 		FROM thunderdome.poker p JOIN thunderdome.poker_story s ON s.poker_id = p.id
 		WHERE p.id = '00000000-0000-0000-0000-000000000090'`).Scan(&migrationPreservedHistory); err != nil || !migrationPreservedHistory {
@@ -135,7 +149,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	vote(one, "testing", "2")
 	vote(two, "testing", "3")
 	vote(one, "frontend", "5")
-	if !vote(three, "frontend", "5") {
+	if !vote(three, "development", "5") {
 		t.Fatal("all active participants have submitted a ballot")
 	}
 	if _, err := svc.RetractVote(game, one, story, "frontend"); err != nil {
@@ -161,8 +175,8 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	}
 	vote(one, "frontend", "5")
 	vote(one, "backend", "3")
-	vote(two, "backend", "5")
-	if !vote(three, "backend", "8") {
+	vote(two, "development", "5")
+	if !vote(three, "development", "8") {
 		t.Fatal("complete disciplines and active participants should finish")
 	}
 	for _, invalid := range []struct{ game, user, story, value, category string }{
@@ -186,7 +200,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if revealed[0].Estimation.Total != "12.83" {
+	if revealed[0].Estimation.Total != "7.83" || len(revealed[0].Estimation.Categories) != 2 || revealed[0].Estimation.Categories[1].Count != 3 {
 		t.Fatalf("unexpected estimate: %+v", revealed[0].Estimation)
 	}
 	if _, _, err := svc.SetVote(game, one, story, "5", "testing"); err == nil {
@@ -195,7 +209,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	if _, err := svc.RetractVote(game, one, story, "testing"); err == nil {
 		t.Fatal("retracted vote after reveal")
 	}
-	if revealed[0].Points != "12.83" {
+	if revealed[0].Points != "7.83" {
 		t.Fatal("completion did not automatically save category averages")
 	}
 	if _, err := svc.FinalizeStory(game, story, "999"); err == nil {
@@ -203,7 +217,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	}
 	exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, two)
 	reloaded := (&Service{DB: db, Logger: svc.Logger}).GetStories(game, one)[0]
-	if reloaded.Estimation.Total != "12.83" || reloaded.Estimation.Categories[0].Count != 2 {
+	if reloaded.Estimation.Total != "7.83" || reloaded.Estimation.Categories[0].Count != 2 {
 		t.Fatal("historical breakdown changed with spectator status")
 	}
 	restarted, err := svc.ActivateStoryVoting(game, story)
@@ -284,7 +298,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 				t.Fatal(err)
 			}
 			for i, id := range []string{one, two, three, observer} {
-				vote(id, "backend", []string{"1/2", "1", "3", "5"}[i])
+				vote(id, "development", []string{"1/2", "1", "3", "5"}[i])
 			}
 			if svc.GetStories(game, one)[0].Estimation != nil {
 				t.Fatal("discussion metadata leaked before reveal")
@@ -298,7 +312,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 				t.Fatal(err)
 			}
 			revealed := svc.GetStories(game, one)[0]
-			if !revealed.Estimation.Categories[2].NeedsDiscussion || revealed.Estimation.Total != "2.38" {
+			if !revealed.Estimation.Categories[1].NeedsDiscussion || revealed.Estimation.Total != "2.38" {
 				t.Fatalf("missing discussion warning at reveal: %+v", revealed.Estimation)
 			}
 			if revealed.Points != "2.38" {
@@ -306,7 +320,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 			}
 			exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, observer)
 			reloaded := (&Service{DB: db, Logger: svc.Logger}).GetStories(game, one)[0]
-			group := reloaded.Estimation.Categories[2]
+			group := reloaded.Estimation.Categories[1]
 			if !group.NeedsDiscussion || len(group.DistinctValues) != 4 || group.Count != 4 {
 				t.Fatalf("saved warning changed with attendance: %+v", group)
 			}
@@ -318,6 +332,7 @@ func TestCategoryVotingDatabase(t *testing.T) {
 	// Verify the migration is reversible after actual data has been saved.
 	t.Run("Jira writeback", func(t *testing.T) { testPokerJiraWriteback(t, db, svc) })
 	t.Run("Jira story import", func(t *testing.T) { testPokerStoryImport(t, db, svc) })
+	exec(strings.Split(string(rolesMigration), "-- +goose Down")[1])
 	saveMigration, err := os.ReadFile("../migrations/20260915150000_require_save_for_jira_writeback.sql")
 	if err != nil {
 		t.Fatal(err)

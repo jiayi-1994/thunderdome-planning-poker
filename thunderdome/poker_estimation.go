@@ -7,7 +7,9 @@ import (
 	"strings"
 )
 
-var PokerVoteCategories = []string{"testing", "frontend", "backend"}
+var PokerVoteCategories = []string{"testing", "development"}
+
+var historicalPokerVoteCategories = []string{"testing", "frontend", "backend"}
 
 type PokerCategoryAverage struct {
 	Category        string   `json:"category"`
@@ -23,12 +25,15 @@ type PokerEstimation struct {
 }
 
 func ValidPokerCategory(category string) bool {
-	for _, candidate := range PokerVoteCategories {
-		if category == candidate {
-			return true
-		}
+	return category == "testing" || NormalizePokerVoteCategory(category) == "development"
+}
+
+// NormalizePokerVoteCategory maps role IDs from older clients to the current development role.
+func NormalizePokerVoteCategory(category string) string {
+	if category == "frontend" || category == "backend" {
+		return "development"
 	}
-	return false
+	return category
 }
 
 // NumericPokerVote excludes abstentions and hidden votes, while retaining explicit zeroes.
@@ -50,27 +55,44 @@ func formatPokerPoints(value float64) string {
 // CalculatePokerEstimation averages each discipline separately and rounds only the final sum.
 // A nil result identifies legacy ballots; an empty Total means nobody submitted a numeric vote.
 func CalculatePokerEstimation(votes []*Vote, users []*PokerUser) *PokerEstimation {
-	grouped := false
+	grouped, hasDevelopment, hasHistoricalRole := false, false, false
 	eligible := make(map[string]bool, len(users))
 	for _, user := range users {
 		eligible[user.ID] = !user.Spectator
 	}
-	for _, vote := range votes {
+	latestDevelopmentBallot := make(map[string]int)
+	for index, vote := range votes {
 		if ValidPokerCategory(vote.Category) {
 			grouped = true
+		}
+		hasDevelopment = hasDevelopment || vote.Category == "development"
+		hasHistoricalRole = hasHistoricalRole || vote.Category == "frontend" || vote.Category == "backend"
+		if NormalizePokerVoteCategory(vote.Category) == "development" {
+			latestDevelopmentBallot[vote.UserID] = index
 		}
 	}
 	if !grouped {
 		return nil
 	}
-	result := &PokerEstimation{Categories: make([]PokerCategoryAverage, 0, 3)}
+	categories := PokerVoteCategories
+	if hasHistoricalRole && !hasDevelopment {
+		categories = historicalPokerVoteCategories
+	}
+	result := &PokerEstimation{Categories: make([]PokerCategoryAverage, 0, len(categories))}
 	total, hasNumericVotes := 0.0, false
-	for _, category := range PokerVoteCategories {
+	for _, category := range categories {
 		group := PokerCategoryAverage{Category: category}
 		sum := 0.0
 		distinct := make(map[float64]bool)
-		for _, vote := range votes {
-			if vote.Category != category || !eligible[vote.UserID] {
+		for index, vote := range votes {
+			if !eligible[vote.UserID] {
+				continue
+			}
+			if category == "development" {
+				if NormalizePokerVoteCategory(vote.Category) != category || latestDevelopmentBallot[vote.UserID] != index {
+					continue
+				}
+			} else if vote.Category != category {
 				continue
 			}
 			if value, valid := NumericPokerVote(vote.VoteValue); valid {

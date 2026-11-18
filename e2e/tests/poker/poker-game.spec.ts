@@ -207,7 +207,7 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     await bp.goto(pokerActivateStory.id);
 
     await expect(bp.page.getByTestId("pointCard")).toHaveCount(0);
-    await bp.page.getByRole("button", { name: "后端开发", exact: true }).click();
+    await bp.page.getByRole("button", { name: "开发", exact: true }).click();
 
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(
       "[Voting not started]",
@@ -221,14 +221,14 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     );
     await expect(bp.page.locator('[data-testid="pointCard"][data-locked="false"]')).toHaveCount(8);
     await expect(bp.page.getByTestId("voting-testing")).not.toBeVisible();
-    await expect(bp.page.getByTestId("voting-frontend")).not.toBeVisible();
-    await bp.page.getByRole("button", { name: "后端开发 3 点", exact: true }).click();
+    await expect(bp.page.getByTestId("voting-development")).toBeVisible();
+    await bp.page.getByRole("button", { name: "开发 3 点", exact: true }).click();
     await expect(bp.page.getByRole("button", { name: "更换身份" })).toBeDisabled();
     await bp.page.reload();
     await expect(
-      bp.page.getByRole("button", { name: "后端开发 3 点", exact: true }),
+      bp.page.getByRole("button", { name: "开发 3 点", exact: true }),
     ).toHaveAttribute("aria-pressed", "true");
-    await bp.page.getByRole("button", { name: "后端开发 3 点", exact: true }).click();
+    await bp.page.getByRole("button", { name: "开发 3 点", exact: true }).click();
     await expect(bp.page.getByRole("button", { name: "更换身份" })).toBeEnabled();
   });
 
@@ -298,8 +298,7 @@ test.describe("Poker Game page", { tag: ["@poker"] }, () => {
     await bp.page.locator('[data-testid="plan-activate"]').click();
     await expect(bp.page.locator('[data-testid="currentplan-name"]')).toContainText(lokiPlan.name);
     await bp.page.getByRole("button", { name: "测试 2 点", exact: true }).click();
-    await expect(bp.page.getByTestId("voting-frontend")).not.toBeVisible();
-    await expect(bp.page.getByTestId("voting-backend")).not.toBeVisible();
+    await expect(bp.page.getByTestId("voting-development")).not.toBeVisible();
     await bp.page.locator('[data-testid="voting-finish"]').click();
 
     await expect(bp.page.getByTestId("category-total")).toHaveText("2");

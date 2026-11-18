@@ -20,7 +20,7 @@
   {#if !selected || (changing && !locked)}
     <h3 class="text-xl font-semibold">先选择你的评点身份</h3>
     <p class="mt-1 mb-4 text-sm text-gray-600 dark:text-gray-300">选择后只显示对应的评点卡牌，结束后可查看全部结果。</p>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {#each voteCategories as role}
         <button
           type="button"

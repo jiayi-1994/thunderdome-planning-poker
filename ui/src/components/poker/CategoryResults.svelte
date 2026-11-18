@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PokerEstimation, PokerStoryVote, PokerUser } from '../../types/poker';
-  import { voteCategories } from './categoryEstimation';
+  import { currentVoteCategory, voteCategories, voteCategoryLabels } from './categoryEstimation';
   import { TriangleAlert } from '@lucide/svelte';
 
   interface Props {
@@ -10,6 +10,9 @@
     hideVoterIdentity?: boolean;
   }
   let { estimation, votes = [], users = [], hideVoterIdentity = false }: Props = $props();
+  let groups: PokerEstimation['categories'] = $derived(
+    estimation?.categories ?? voteCategories.map(({ id }) => ({ category: id, average: '', count: 0 })),
+  );
 </script>
 
 <section
@@ -18,7 +21,7 @@
   data-testid="category-results"
 >
   <h3 class="text-xl font-semibold mb-4">分项评点结果</h3>
-  {#if estimation?.categories.some((group) => group.needsDiscussion)}
+  {#if groups.some((group) => group.needsDiscussion)}
     <div
       role="alert"
       class="mb-4 flex items-start gap-3 rounded-lg border border-amber-400 bg-amber-50 p-4 text-amber-900 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-100"
@@ -30,26 +33,29 @@
       </div>
     </div>
   {/if}
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    {#each voteCategories as category}
-      {@const group = estimation?.categories.find((group) => group.category === category.id)}
-      <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4" data-testid={`result-${category.id}`}>
-        <h4 class="font-semibold">{category.label}</h4>
-        {#if group?.needsDiscussion}
-          <p class="mt-2 font-semibold text-amber-800 dark:text-amber-200" data-testid={`discussion-${category.id}`}>
+  <div class="grid grid-cols-1 gap-4 {groups.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}">
+    {#each groups as group (group.category)}
+      {@const role = group.category}
+      {@const ballots = new Map(votes.filter((vote) =>
+        (role === 'development' ? currentVoteCategory(vote.category) : vote.category) === role,
+      ).map((vote) => [vote.warriorId, vote]))}
+      <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4" data-testid={`result-${role}`}>
+        <h4 class="font-semibold">{voteCategoryLabels[role]}</h4>
+        {#if group.needsDiscussion}
+          <p class="mt-2 font-semibold text-amber-800 dark:text-amber-200" data-testid={`discussion-${role}`}>
             需要讨论 · {group.distinctValues?.length} 种分值
           </p>
           <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">
             分值：{group.distinctValues?.map((value) => (value === '0.5' ? '1/2' : value)).join('、')}
           </p>
         {/if}
-        <div class="mt-2 text-3xl font-bold" data-testid="category-average">{group?.average || '—'}</div>
+        <div class="mt-2 text-3xl font-bold" data-testid="category-average">{group.average || '—'}</div>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-          {group?.count ? `平均点数 · ${group.count} 个有效评分` : '无有效评分，不参与合计'}
+          {group.count ? `平均点数 · ${group.count} 个有效评分` : '无有效评分，不参与合计'}
         </p>
         {#if votes.length}
           <ul class="mt-3 space-y-1 text-sm">
-            {#each votes.filter((vote) => vote.category === category.id && users.some((user) => user.id === vote.warriorId && !user.spectator)) as vote}
+            {#each [...ballots.values()].filter((vote) => users.some((user) => user.id === vote.warriorId && !user.spectator)) as vote}
               <li class="flex justify-between gap-2">
                 <span class="truncate"
                   >{hideVoterIdentity ? '匿名' : users.find((user) => user.id === vote.warriorId)?.name}</span
@@ -67,7 +73,9 @@
   >
     <div>
       <h4 class="font-semibold">最终点数</h4>
-      <p class="text-sm text-gray-600 dark:text-gray-300">测试平均分 + 前端平均分 + 后端平均分</p>
+      <p class="text-sm text-gray-600 dark:text-gray-300">
+        {groups.map((group) => `${voteCategoryLabels[group.category]}平均分`).join(' + ')}
+      </p>
     </div>
     <output class="text-3xl font-bold text-green-700 dark:text-lime-400" data-testid="category-total"
       >{estimation?.total || '无有效评分'}</output

@@ -127,22 +127,21 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		start()
 		vote(one, "testing", "2")
 		vote(two, "testing", "3")
-		vote(one, "frontend", "5")
-		vote(one, "backend", "3")
-		vote(two, "backend", "5")
-		vote(three, "backend", "8")
+		vote(one, "development", "3")
+		vote(two, "development", "5")
+		vote(three, "development", "8")
 		end()
 		plan := poker.GetStories(game, one)[0]
-		if plan.Points != "12.83" || plan.JiraSync == nil || plan.JiraSync.Status != "pending" {
+		if plan.Points != "7.83" || plan.JiraSync == nil || plan.JiraSync.Status != "pending" {
 			t.Fatal("ending voting did not atomically save and queue Jira")
 		}
 		// Changing attendance after the vote must not alter the result sent or displayed.
 		exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, two)
-		if total := poker.GetStories(game, one)[0].Estimation.Total; total != "12.83" {
+		if total := poker.GetStories(game, one)[0].Estimation.Total; total != "7.83" {
 			t.Fatalf("revealed result changed after attendance update: %s", total)
 		}
 		event := process()
-		if event == nil || event.Sync.Status != "succeeded" || event.Sync.Points != "12.83" || len(written) != 1 || written[0] != 12.83 {
+		if event == nil || event.Sync.Status != "succeeded" || event.Sync.Points != "7.83" || len(written) != 1 || written[0] != 7.83 {
 			t.Fatalf("wrong writeback result: %+v, %v", event, written)
 		}
 		if next := process(); next != nil {
@@ -159,7 +158,7 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 	t.Run("countdown below half waits for Save and excludes nonvoters", func(t *testing.T) {
 		exec(`UPDATE thunderdome.poker_user SET spectator = false WHERE user_id = $1`, two)
 		start()
-		vote(one, "testing", "5")
+		vote(one, "development", "5")
 		exec(`UPDATE thunderdome.poker_story SET votestart_time = now() - interval '301 seconds' WHERE id = $1`, story)
 		if _, err := poker.EndExpiredStoryVoting(ctx); err != nil {
 			t.Fatal(err)
@@ -167,6 +166,11 @@ func testPokerJiraWriteback(t *testing.T, database *sql.DB, poker *Service) {
 		if event := process(); event != nil {
 			t.Fatal("countdown expiry wrote to Jira before Save")
 		}
+		if sync := poker.GetStories(game, one)[0].JiraSync; sync == nil || sync.Status != "awaiting_save" {
+			t.Fatal("a development-only round must retain its participants before Save")
+		}
+		exec(`UPDATE thunderdome.poker_user SET spectator = true WHERE user_id = $1`, one)
+		defer exec(`UPDATE thunderdome.poker_user SET spectator = false WHERE user_id = $1`, one)
 		save()
 		event := process()
 		if event == nil || event.Sync.Points != "5" || event.Sync.Status != "succeeded" || written[len(written)-1] != 5 {

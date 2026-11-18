@@ -158,15 +158,15 @@ describe('PokerGame voting reminder eligibility', () => {
   });
 
   it.each([
-    { name: 'category', ballot: { warriorId: 'self', category: 'backend', vote: '' } satisfies PokerStoryVote },
+    { name: 'category', ballot: { warriorId: 'self', category: 'development', vote: '' } satisfies PokerStoryVote },
     { name: 'legacy', ballot: { warriorId: 'self', vote: '' } satisfies PokerStoryVote },
   ])('reminds an unassigned voter until their own masked $name ballot arrives', async ({ ballot }) => {
     const state = await openGame();
-    await expect.element(page.getByRole('button', { name: '后端开发', exact: true })).toBeVisible();
+    await expect.element(page.getByRole('button', { name: '开发', exact: true })).toBeVisible();
     await expect.element(reminder()).toBeVisible();
     await expect.poll(() => document.title).toContain('🔴');
 
-    state.plans[0].votes = [{ warriorId: 'other', category: 'backend', vote: '' }];
+    state.plans[0].votes = [{ warriorId: 'other', category: 'development', vote: '' }];
     await event('vote_activity', state.plans, 'other');
     await expect.element(reminder()).toBeVisible();
 
@@ -179,16 +179,16 @@ describe('PokerGame voting reminder eligibility', () => {
   it('stops immediately for a local zero-point selection and resumes after retracting it', async () => {
     await openGame();
     await expect.element(reminder()).toBeVisible();
-    await page.getByRole('button', { name: '后端开发', exact: true }).click();
-    await page.getByRole('button', { name: '后端开发 0 点', exact: true }).click();
+    await page.getByRole('button', { name: '开发', exact: true }).click();
+    await page.getByRole('button', { name: '开发 0 点', exact: true }).click();
     await expect.element(reminder()).not.toBeInTheDocument();
     expect(JSON.parse(socket.send.mock.calls.at(-1)![0])).toMatchObject({ type: 'vote' });
     expect(JSON.parse(JSON.parse(socket.send.mock.calls.at(-1)![0]).value)).toMatchObject({
-      category: 'backend',
+      category: 'development',
       voteValue: '0',
     });
 
-    await page.getByRole('button', { name: '后端开发 0 点', exact: true }).click();
+    await page.getByRole('button', { name: '开发 0 点', exact: true }).click();
     await expect.element(reminder()).toBeVisible();
     expect(JSON.parse(socket.send.mock.calls.at(-1)![0])).toMatchObject({ type: 'retract_vote' });
   });
@@ -235,8 +235,8 @@ describe('PokerGame voting reminder eligibility', () => {
       state.plans[0].active = false;
       state.plans[0].points = '0';
       state.plans[0].voteEndTime = now;
-      state.plans[0].votes = [{ warriorId: 'self', category: 'backend', vote: '0' }];
-      state.plans[0].estimation = { total: '0', categories: [{ category: 'backend', average: '0', count: 1 }] };
+      state.plans[0].votes = [{ warriorId: 'self', category: 'development', vote: '0' }];
+      state.plans[0].estimation = { total: '0', categories: [{ category: 'development', average: '0', count: 1 }] };
       await event(
         type,
         type === 'voting_expired'
@@ -315,7 +315,7 @@ describe('PokerGame voting reminder eligibility', () => {
     const state = game();
     state.users = ['self', 'Alice', 'Bob', 'Carol', 'Dave'].map(id => ({ ...participant(id), name: id }));
     state.users.push({ ...participant('spectator'), spectator: true }, { ...participant('offline'), active: false });
-    state.plans[0].votes = [{ warriorId: 'self', category: 'backend', vote: '0' }];
+    state.plans[0].votes = [{ warriorId: 'self', category: 'development', vote: '0' }];
     await openGame(state);
     const summary = page.getByTestId('unvoted-participants');
     const names = page.getByTestId('unvoted-names');
@@ -362,8 +362,8 @@ describe('PokerGame voting reminder eligibility', () => {
     state.leaders = ['self'];
     await openGame(state);
     state.plans[0].active = false;
-    state.plans[0].votes = [{ warriorId: 'self', category: 'backend', vote: '5' }];
-    state.plans[0].estimation = { total: '5', categories: [{ category: 'backend', average: '5', count: 1 }] };
+    state.plans[0].votes = [{ warriorId: 'self', category: 'development', vote: '5' }];
+    state.plans[0].estimation = { total: '5', categories: [{ category: 'development', average: '5', count: 1 }] };
     await event('voting_expired', { planId: 'story', voteStartTime: state.plans[0].voteStartTime, plans: state.plans });
     await expect.element(page.getByTestId('voting-save')).toBeEnabled();
     await expect.element(page.getByTestId('voting-restart')).toBeVisible();
@@ -399,7 +399,7 @@ describe('PokerGame voting reminder eligibility', () => {
     socket.handlers!.onopen();
     await tick();
     await expect.element(reminder()).not.toBeInTheDocument();
-    state.plans[0].votes = [{ warriorId: 'self', category: 'backend', vote: '' }];
+    state.plans[0].votes = [{ warriorId: 'self', category: 'development', vote: '' }];
     await event('init', state);
     await expect.element(reminder()).not.toBeInTheDocument();
     state.plans[0].votes = [];

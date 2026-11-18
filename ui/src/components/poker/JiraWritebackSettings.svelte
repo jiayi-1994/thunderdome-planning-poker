@@ -119,7 +119,7 @@
     <div>
       <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">Jira 点数回写</h2>
       <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        评点结束后自动保存，并将测试、前端、后端的平均分之和写入 Jira。超时且评分人数不足一半时，需手动保存。
+        评点结束后自动保存，并将测试和开发的平均分之和写入 Jira。超时且评分人数不足一半时，需手动保存。
       </p>
     </div>
     {#if loading}

@@ -145,17 +145,17 @@ func (d *Service) SetVote(pokerID string, userID string, storyID string, voteVal
 	if !thunderdome.ValidPokerPointValue(voteValue) {
 		return nil, false, fmt.Errorf("请选择 0、1/2、1、2、3、5 或 8 分")
 	}
-	if category != "" {
-		if !thunderdome.ValidPokerCategory(category) {
-			return nil, false, fmt.Errorf("invalid vote category")
-		}
+	category = thunderdome.NormalizePokerVoteCategory(category)
+	if category != "" && !thunderdome.ValidPokerCategory(category) {
+		return nil, false, fmt.Errorf("invalid vote category")
 	}
 	var rawVotes []byte
 	err := d.DB.QueryRow(
 		`UPDATE thunderdome.poker_story s SET votes = (
-			SELECT coalesce(jsonb_agg(v), '[]'::jsonb)
-			FROM jsonb_array_elements(s.votes) v
-			WHERE NOT (v->>'warriorId' = $2 AND coalesce(v->>'category', '') = $4)
+			SELECT coalesce(jsonb_agg(v ORDER BY ord), '[]'::jsonb)
+			FROM jsonb_array_elements(s.votes) WITH ORDINALITY AS ballot(v, ord)
+			WHERE NOT (v->>'warriorId' = $2 AND (coalesce(v->>'category', '') = $4
+				OR ($4 = 'development' AND coalesce(v->>'category', '') IN ('frontend', 'backend'))))
 		) || jsonb_build_array(jsonb_build_object('warriorId', $2::text, 'vote', $3::text, 'category', $4::text)),
 		updated_date = NOW()
 		FROM thunderdome.poker p
@@ -179,13 +179,16 @@ func (d *Service) SetVote(pokerID string, userID string, storyID string, voteVal
 
 // RetractVote removes a users vote for the story
 func (d *Service) RetractVote(pokerID string, userID string, storyID string, category string) ([]*thunderdome.Story, error) {
+	category = thunderdome.NormalizePokerVoteCategory(category)
 	if category != "" && !thunderdome.ValidPokerCategory(category) {
 		return nil, fmt.Errorf("invalid vote category")
 	}
 	result, err := d.DB.Exec(
 		`UPDATE thunderdome.poker_story s SET votes = (
-			SELECT coalesce(jsonb_agg(v), '[]'::jsonb) FROM jsonb_array_elements(s.votes) v
-			WHERE NOT (v->>'warriorId' = $2 AND coalesce(v->>'category', '') = $3)
+			SELECT coalesce(jsonb_agg(v ORDER BY ord), '[]'::jsonb)
+			FROM jsonb_array_elements(s.votes) WITH ORDINALITY AS ballot(v, ord)
+			WHERE NOT (v->>'warriorId' = $2 AND (coalesce(v->>'category', '') = $3
+				OR ($3 = 'development' AND coalesce(v->>'category', '') IN ('frontend', 'backend'))))
 		), updated_date = NOW()
 		FROM thunderdome.poker p
 		WHERE s.id = $1 AND s.poker_id = $4 AND p.id = s.poker_id

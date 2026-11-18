@@ -178,9 +178,9 @@ If the team agrees, the game is over. If not, then it has just begun!
 
 #### Choose a voting role
 
-Choose **测试**, **前端开发**, or **后端开发** before voting. Only that role's cards are shown. The browser remembers the choice for this user and game. After casting a ballot, retract it before changing roles; a new round allows another choice. Spectators see the results without voting cards.
+Choose **测试** or **开发** before voting. Only that role's cards are shown. The browser remembers the choice for this user and game. After casting a ballot, retract it before changing roles. Spectators see the results without voting cards.
 
-When voting ends, the result is automatically saved with all three category averages and their total. A timed-out round is saved automatically only when at least half of the active nonspectators submitted a numeric vote; count each person once, even if they voted in several categories. Exactly half qualifies, and zero is a numeric vote. Otherwise, the facilitator can review the result and click **Save** (保存) or restart voting. A category with at least four distinct numeric scores displays **需要讨论**, with its score values. Repeated scores, equivalent values such as `1/2` and `0.5`, nonvoters, and abstentions do not increase the distinct count. Saved results retain this advisory warning, which does not block automatic saving.
+When voting ends, the sum of the testing and development averages is saved automatically. Historical rounds retain the category averages used at the time. A timed-out round is saved automatically only when at least half of the active nonspectators submitted a numeric vote. Each person counts once. Exactly half qualifies, and zero is a numeric vote. Otherwise, the facilitator can review the result and click **Save** (保存) or restart voting. A category with at least four distinct numeric scores displays **需要讨论**, with its score values. Repeated scores, equivalent values such as `1/2` and `0.5`, nonvoters, and abstentions do not increase the distinct count. Saved results retain this advisory warning, which does not block automatic saving.
 
 ### Stories
 

@@ -1,12 +1,11 @@
 import type { PokerStoryVote, PokerVoteCategory } from '../../types/poker';
-import { voteCategories } from './categoryEstimation';
+import { currentVoteCategory } from './categoryEstimation';
 
 const roleKey = (gameId: string, userId: string) => `poker-role:${gameId}:${userId}`;
 
 export function readPokerRole(gameId: string, userId: string): PokerVoteCategory | null {
   try {
-    const saved = localStorage.getItem(roleKey(gameId, userId));
-    return voteCategories.find(role => role.id === saved)?.id ?? null;
+    return currentVoteCategory(localStorage.getItem(roleKey(gameId, userId)));
   } catch {
     return null;
   }
@@ -22,6 +21,6 @@ export function savePokerRole(gameId: string, userId: string, category: PokerVot
 
 // A ballot already cast in this round takes precedence over a stale browser preference.
 export function roleForRound(votes: PokerStoryVote[], userId: string, preferred: PokerVoteCategory | null) {
-  const categories = votes.filter(vote => vote.warriorId === userId && vote.category).map(vote => vote.category!);
-  return preferred && categories.includes(preferred) ? preferred : (categories[0] ?? preferred);
+  const categories = votes.filter(vote => vote.warriorId === userId).map(vote => currentVoteCategory(vote.category));
+  return preferred && categories.includes(preferred) ? preferred : (categories.find(Boolean) ?? preferred);
 }

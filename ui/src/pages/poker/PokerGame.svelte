@@ -5,7 +5,7 @@
   import PageLayout from '../../components/PageLayout.svelte';
   import CategoryVoting from '../../components/poker/CategoryVoting.svelte';
   import CategoryResults from '../../components/poker/CategoryResults.svelte';
-  import { emptyCategoryVotes, voteCategories } from '../../components/poker/categoryEstimation';
+  import { currentVoteCategory, emptyCategoryVotes, voteCategories } from '../../components/poker/categoryEstimation';
   import PokerRoleSelector from '../../components/poker/PokerRoleSelector.svelte';
   import { readPokerRole, roleForRound, savePokerRole } from '../../components/poker/pokerRole';
   import { expirationMatchesRound } from '../../components/poker/votingDeadline';
@@ -154,7 +154,8 @@
           const activePlan = pokerGame.plans.find((p) => p.id === pokerGame.activePlanId);
           if (activePlan) {
             for (const ballot of activePlan.votes) {
-              if (ballot.warriorId === $user.id && ballot.category) categoryVotes[ballot.category] = ballot.vote;
+              const category = currentVoteCategory(ballot.category);
+              if (ballot.warriorId === $user.id && category) categoryVotes[category] = ballot.vote;
             }
             currentStory = activePlan;
             if (activePlan.active) {
@@ -260,7 +261,7 @@
           if (
             !pokerGame.plans
               .find((plan) => plan.id === pokerGame.activePlanId)
-              ?.votes.some((vote) => vote.warriorId === $user.id && vote.category === category.id)
+              ?.votes.some((vote) => vote.warriorId === $user.id && currentVoteCategory(vote.category) === category.id)
           )
             categoryVotes[category.id] = '';
         }
@@ -538,7 +539,7 @@
       ? voteCategories.filter(
           (category) =>
             category.id !== selectedCategory &&
-            activeStory.votes.some((vote) => vote.warriorId === $user.id && vote.category === category.id),
+            activeStory.votes.some((vote) => vote.warriorId === $user.id && currentVoteCategory(vote.category) === category.id),
         )
       : [],
   );

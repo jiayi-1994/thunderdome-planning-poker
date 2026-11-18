@@ -44,10 +44,11 @@ export type PokerStory = {
 export type PokerStoryVote = {
   vote: string;
   warriorId: string;
-  category?: PokerVoteCategory;
+  category?: PokerResultCategory;
 };
 
-export type PokerVoteCategory = 'testing' | 'frontend' | 'backend';
+export type PokerVoteCategory = 'testing' | 'development';
+export type PokerResultCategory = PokerVoteCategory | 'frontend' | 'backend';
 
 export type PokerJiraSettings = {
   enabled: boolean;
@@ -80,7 +81,7 @@ export type PokerVotingExpiration = {
 
 export type PokerEstimation = {
   categories: Array<{
-    category: PokerVoteCategory;
+    category: PokerResultCategory;
     average: string;
     count: number;
     distinctValues?: string[];

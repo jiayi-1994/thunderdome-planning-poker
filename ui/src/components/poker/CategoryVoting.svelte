@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PokerStoryVote, PokerUser, PokerVoteCategory } from '../../types/poker';
-  import { categoryPointValues, emptyCategoryVotes, voteCategories } from './categoryEstimation';
+  import { categoryPointValues, currentVoteCategory, emptyCategoryVotes, voteCategories } from './categoryEstimation';
 
   interface Props {
     points: string[];
@@ -38,9 +38,10 @@
       <fieldset disabled={isLocked} class="min-w-0" data-testid={`voting-${category.id}`}>
         <legend class="text-lg font-semibold mb-1">{category.label}</legend>
         <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
-          {votes.filter(
-            (vote) =>
-              vote.category === category.id && users.some((user) => user.id === vote.warriorId && !user.spectator),
+          {users.filter(
+            (user) => !user.spectator && votes.some(
+              (vote) => vote.warriorId === user.id && currentVoteCategory(vote.category) === category.id,
+            ),
           ).length} 人已评点
         </p>
         <div class="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -72,6 +73,6 @@
     {/each}
   </div>
   <p class="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4 text-sm text-gray-600 dark:text-gray-300">
-    揭晓后，最终点数 = 测试平均分 + 前端平均分 + 后端平均分。
+    揭晓后，最终点数 = 测试平均分 + 开发平均分。
   </p>
 </section>

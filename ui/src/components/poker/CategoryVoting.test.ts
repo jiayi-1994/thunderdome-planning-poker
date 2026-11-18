@@ -10,6 +10,14 @@ import type { PokerEstimation, PokerUser } from '../../types/poker';
 const estimation: PokerEstimation = {
   categories: [
     { category: 'testing', average: '2.5', count: 2 },
+    { category: 'development', average: '5.33', count: 3 },
+  ],
+  total: '7.83',
+};
+
+const historicalEstimation: PokerEstimation = {
+  categories: [
+    { category: 'testing', average: '2.5', count: 2 },
     { category: 'frontend', average: '5', count: 1 },
     { category: 'backend', average: '5.33', count: 3 },
   ],
@@ -28,7 +36,7 @@ describe('category estimation', () => {
     render(CategoryVoting, {
       points: ['1', '2', '3'],
       category: 'testing',
-      selections: { testing: '2', frontend: '', backend: '' },
+      selections: { testing: '2', development: '' },
       isLocked: false,
       onVote,
       onRetract,
@@ -40,13 +48,12 @@ describe('category estimation', () => {
     expect(onVote).toHaveBeenCalledWith('testing', '3');
     await page.getByRole('button', { name: '测试 2 点', exact: true }).click();
     expect(onRetract).toHaveBeenCalledWith('testing');
-    await expect.element(page.getByTestId('voting-backend')).not.toBeInTheDocument();
-    await expect.element(page.getByTestId('voting-frontend')).not.toBeInTheDocument();
+    await expect.element(page.getByTestId('voting-development')).not.toBeInTheDocument();
   });
 
   it('locks all categories for spectators, completed votes and disconnected clients', async () => {
-    render(CategoryVoting, { category: 'backend', points: ['1'], isLocked: true, onVote: vi.fn(), onRetract: vi.fn() });
-    await expect.element(page.getByRole('button', { name: '后端开发 1 点', exact: true })).toBeDisabled();
+    render(CategoryVoting, { category: 'development', points: ['1'], isLocked: true, onVote: vi.fn(), onRetract: vi.fn() });
+    await expect.element(page.getByRole('button', { name: '开发 1 点', exact: true })).toBeDisabled();
     await expect.element(page.getByTestId('voting-testing')).not.toBeInTheDocument();
   });
 
@@ -57,7 +64,10 @@ describe('category estimation', () => {
       users: [{ id: 'one', name: 'Private name', spectator: false } as PokerUser],
       hideVoterIdentity: true,
     });
-    await expect.element(page.getByTestId('category-total')).toHaveTextContent('12.83');
+    await expect.element(page.getByTestId('category-total')).toHaveTextContent('7.83');
+    await expect.element(page.getByTestId('result-development')).toHaveTextContent('5.33');
+    await expect.element(page.getByTestId('result-frontend')).not.toBeInTheDocument();
+    await expect.element(page.getByTestId('result-backend')).not.toBeInTheDocument();
     await expect.element(page.getByText('匿名', { exact: true })).toBeVisible();
     await expect.element(page.getByText('Private name', { exact: true })).not.toBeInTheDocument();
   });
@@ -108,8 +118,10 @@ describe('category estimation', () => {
     await expect.element(page.getByTestId('discussion-testing')).not.toBeInTheDocument();
     await expect.element(page.getByTestId('result-frontend')).toBeVisible();
     await expect.element(page.getByTestId('category-total')).toHaveTextContent('4.38');
-    await rerender({ estimation });
+    await rerender({ estimation: historicalEstimation });
     await expect.element(page.getByRole('alert')).not.toBeInTheDocument();
+    await expect.element(page.getByTestId('category-total')).toHaveTextContent('12.83');
+    await expect.element(page.getByTestId('result-frontend')).toHaveTextContent('前端开发');
   });
 
   it('excludes categories without numeric ballots and still allows saving participating categories', async () => {
@@ -117,14 +129,13 @@ describe('category estimation', () => {
       estimation: {
         categories: [
           { category: 'testing', average: '2.5', count: 2 },
-          { category: 'frontend', average: '', count: 0 },
-          { category: 'backend', average: '', count: 0 },
+          { category: 'development', average: '', count: 0 },
         ],
         total: '2.5',
       },
     });
     await expect.element(page.getByTestId('category-total')).toHaveTextContent('2.5');
-    await expect.element(page.getByTestId('result-frontend')).toHaveTextContent('无有效评分，不参与合计');
+    await expect.element(page.getByTestId('result-development')).toHaveTextContent('无有效评分，不参与合计');
     await expect.element(page.getByTestId('result-testing')).toHaveTextContent('2 个有效评分');
   });
 

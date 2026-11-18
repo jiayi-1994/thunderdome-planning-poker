@@ -35,7 +35,7 @@ describe('Jira writeback settings and status', () => {
     await expect
       .element(
         page.getByText(
-          '评点结束后自动保存，并将测试、前端、后端的平均分之和写入 Jira。超时且评分人数不足一半时，需手动保存。',
+          '评点结束后自动保存，并将测试和开发的平均分之和写入 Jira。超时且评分人数不足一半时，需手动保存。',
         ),
       )
       .toBeVisible();
